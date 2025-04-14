@@ -1,2 +1,2 @@
-# rulii-spring
-Spring support for Rulii
+# Spring Support for Rulii
+
