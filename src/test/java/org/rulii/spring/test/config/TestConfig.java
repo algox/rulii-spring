@@ -31,6 +31,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class for setting up test rules.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 @Configuration
 @RuleScan(scanBasePackages = "org.rulii.spring.test")
 public class TestConfig {

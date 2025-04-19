@@ -48,6 +48,13 @@ import java.time.Clock;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
+/**
+ * Configuration class for setting up rules in the system.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 @AutoConfiguration
 public class RuleConfig {
 
@@ -57,30 +64,56 @@ public class RuleConfig {
         super();
     }
 
+    /**
+     * Creates a BindingMatchingStrategy instance if no other bean of type BindingMatchingStrategy is available.
+     *
+     * @return a new instance of BindingMatchingStrategy
+     */
     @Bean
     @ConditionalOnMissingBean(BindingMatchingStrategy.class)
     public BindingMatchingStrategy bindingMatchingStrategy() {
         return BindingMatchingStrategy.builder().build();
     }
 
+    /**
+     * Retrieves or creates a ParameterResolver instance if no other bean of type ParameterResolver is available.
+     *
+     * @return a new instance of ParameterResolver
+     */
     @Bean
     @ConditionalOnMissingBean(ParameterResolver.class)
     public ParameterResolver parameterResolver() {
         return ParameterResolver.builder().build();
     }
 
+    /**
+     * Creates a MessageFormatter instance if no other bean of type MessageFormatter is available.
+     *
+     * @return a new instance of MessageFormatter
+     */
     @Bean
     @ConditionalOnMissingBean(MessageFormatter.class)
     public MessageFormatter messageFormatter() {
         return MessageFormatter.builder().build();
     }
 
+    /**
+     * Creates a new MessageResolver instance if no other bean of type MessageResolver is available.
+     *
+     * @return a new MessageResolver instance
+     */
     @Bean
     @ConditionalOnMissingBean(MessageResolver.class)
     public MessageResolver messageResolver() {
         return MessageResolver.builder().build();
     }
 
+    /**
+     * Creates an ObjectFactory instance if no other bean of type ObjectFactory is available.
+     *
+     * @param beanFactory the BeanFactory to use for object creation
+     * @return a new ObjectFactory instance
+     */
     @Bean(name = BeanNames.OBJECT_FACTORY_NAME)
     @ConditionalOnMissingBean(ObjectFactory.class)
     public ObjectFactory objectFactory(BeanFactory beanFactory) {
@@ -90,6 +123,13 @@ public class RuleConfig {
                 : ObjectFactory.builder().build();
     }
 
+    /**
+     * Retrieves or creates a ConverterRegistry instance if no other bean of type ConverterRegistry is available.
+     *
+     * @param conversionService    the ConversionService to use for conversion
+     * @param registerDefaults     a boolean indicating whether to register default converters
+     * @return a new instance of ConverterRegistry
+     */
     @Bean(name = BeanNames.SPRING_CONVERTER_REGISTRY)
     @ConditionalOnMissingBean(ConverterRegistry.class)
     public ConverterRegistry converterRegistry(@Autowired(required = false) ConversionService conversionService,
@@ -99,12 +139,29 @@ public class RuleConfig {
         return result;
     }
 
+    /**
+     * Creates a new RuleRegistry instance if no other bean of type RuleRegistry is available.
+     *
+     * @param ctx the ApplicationContext to use for rule management
+     * @return a new instance of RuleRegistry
+     */
     @Bean(BeanNames.RULE_REGISTRY)
     @ConditionalOnMissingBean(RuleRegistry.class)
     public RuleRegistry ruleRegistry(ApplicationContext ctx) {
         return new SpringRuleRegistry(ctx);
     }
 
+    /**
+     * Creates a RuleContextOptions instance if no other bean of type RuleContextOptions is available.
+     *
+     * @param matchingStrategy the BindingMatchingStrategy to use
+     * @param parameterResolver the ParameterResolver to use
+     * @param messageFormatter the MessageFormatter to use
+     * @param converterRegistry the ConverterRegistry to use
+     * @param objectFactory the ObjectFactory to use
+     * @param messageResolver the MessageResolver to use
+     * @return a new instance of RuleContextOptions
+     */
     @Bean
     @ConditionalOnMissingBean(RuleContextOptions.class)
     public RuleContextOptions ruleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
@@ -115,6 +172,12 @@ public class RuleConfig {
                 Clock.systemDefaultZone(), Locale.getDefault());
     }
 
+    /**
+     * Creates a RuleBeanDefinitionRegistryPostProcessor instance if no other bean of type RuleRegistrarMetaInfo is available.
+     *
+     * @param factory the BeanFactory to use
+     * @return a new RuleBeanDefinitionRegistryPostProcessor instance
+     */
     @Bean
     @ConditionalOnMissingBean(RuleRegistrarMetaInfo.class)
     public RuleBeanDefinitionRegistryPostProcessor rulePostProcessor(BeanFactory factory) {
@@ -122,6 +185,12 @@ public class RuleConfig {
         return new RuleBeanDefinitionRegistryPostProcessor(AutoConfigurationPackages.has(factory) ? AutoConfigurationPackages.get(factory) : null);
     }
 
+    /**
+     * Creates a RuleBeans instance if no other bean of type RuleBeans is available.
+     *
+     * @param factory the ListableBeanFactory to use for initializing RuleBeans
+     * @return a new RuleBeans instance
+     */
     @Bean(BeanNames.RULE_BEAN)
     @ConditionalOnMissingBean(RuleBeans.class)
     public RuleBeans ruleBean(ListableBeanFactory factory) {

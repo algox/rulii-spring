@@ -27,17 +27,31 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import java.util.LinkedList;
 import java.util.List;
 
-public class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
+/**
+ * RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner to scan for classes
+ * annotated with @Rule in the specified base packages and register them in the Spring
+ * application context.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
+class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
 
     private boolean ruleScanStarted = false;
     private final List<BeanDefinitionHolder> ruleBeans = new LinkedList<>();
 
-    public RuleBeanDefinitionScanner() {
+    RuleBeanDefinitionScanner() {
         super(new AnnotationConfigApplicationContext(), false);
         addIncludeFilter(new AnnotationTypeFilter(Rule.class));
     }
 
-    public void scanForRules(String...basePackages) {
+    /**
+     * Scans for rules in the specified base packages and registers them in the Spring application context.
+     *
+     * @param basePackages an array of strings representing the base packages to scan for rule classes
+     */
+    void scanForRules(String...basePackages) {
         this.ruleScanStarted = true;
         scan(basePackages);
     }
@@ -47,6 +61,11 @@ public class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
         if (ruleScanStarted) ruleBeans.add(definitionHolder);
     }
 
+    /**
+     * Retrieve a list of BeanDefinitionHolders that represent rule beans.
+     *
+     * @return a List of BeanDefinitionHolders containing information about rule beans
+     */
     public List<BeanDefinitionHolder> getRuleBeans() {
         return ruleBeans;
     }

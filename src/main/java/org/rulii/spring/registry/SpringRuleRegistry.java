@@ -31,10 +31,23 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a registry for managing rules within a Spring ApplicationContext.
+ * Provides methods for handling rules and rule sets.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class SpringRuleRegistry implements RuleRegistry {
 
     private ApplicationContext ctx;
 
+    /**
+     * Initializes a new SpringRuleRegistry with the specified ApplicationContext.
+     *
+     * @param ctx the ApplicationContext to be used
+     */
     public SpringRuleRegistry(ApplicationContext ctx) {
         super();
         Assert.notNull(ctx, "ctx cannot be null.");
@@ -109,11 +122,21 @@ public class SpringRuleRegistry implements RuleRegistry {
         return get(name, RuleSet.class);
     }
 
-    public ApplicationContext getCtx() {
+    /**
+     * Retrieves the application context.
+     *
+     * @return The application context instance.
+     */
+    private ApplicationContext getCtx() {
         if (ctx == null) throw new UnrulyException("Application Context is closed.");
         return ctx;
     }
 
+    /**
+     * Handles the ContextClosedEvent by setting the ApplicationContext to null.
+     *
+     * @param ctxClosedEvent the ContextClosedEvent to be handled
+     */
     @EventListener
     public void handleContextRefreshEvent(ContextClosedEvent ctxClosedEvent) {
         this.ctx = null;

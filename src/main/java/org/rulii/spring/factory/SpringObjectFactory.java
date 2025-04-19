@@ -24,16 +24,36 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 
+/**
+ * An extension of DefaultObjectFactory that integrates with a Spring ListableBeanFactory to create instances of rules.
+ * Used for creating rule instances by leveraging the Spring IoC container.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class SpringObjectFactory extends DefaultObjectFactory {
 
     // Underlying Spring Factory that does the real work.
     private ListableBeanFactory ctx;
 
+    /**
+     * Constructs a new SpringObjectFactory with the specified ListableBeanFactory.
+     *
+     * @param ctx the ListableBeanFactory to integrate with Spring for creating instances of rules
+     */
     public SpringObjectFactory(ListableBeanFactory ctx) {
         super(false);
         this.ctx = ctx;
     }
 
+    /**
+     * Creates an instance of the specified rule class by leveraging the Spring IoC container.
+     *
+     * @param ruleClass the class representing the rule to be created
+     * @return an instance of the specified rule class created by the Spring IoC container
+     * @throws UnrulyException if an issue occurs during the creation of the rule instance
+     */
     public <T> T createRule(Class<T> ruleClass) throws UnrulyException {
 
         if (ctx instanceof AutowireCapableBeanFactory autowireCapableBeanFactory) {
@@ -43,14 +63,14 @@ public class SpringObjectFactory extends DefaultObjectFactory {
         return super.createRule(ruleClass);
     }
 
+    /**
+     * Handles the context refresh event triggered by the closure of the context.
+     *
+     * @param ctxClosedEvent the ContextClosedEvent object that represents the event triggered by the closure of the context
+     */
     @EventListener
     public void handleContextRefreshEvent(ContextClosedEvent ctxClosedEvent) {
         this.ctx = null;
-    }
-
-    private ListableBeanFactory getCtx() {
-        if (ctx == null) throw new UnrulyException("Application Context is closed.");
-        return ctx;
     }
 
     @Override

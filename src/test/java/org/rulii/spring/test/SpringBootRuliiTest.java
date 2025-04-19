@@ -39,6 +39,13 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * This class represents a Spring Boot test class for Rulii framework. It performs various tests related to rule context and rule registry components.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = TestApplication.class)
 public class SpringBootRuliiTest {

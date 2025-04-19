@@ -17,6 +17,13 @@
  */
 package org.rulii.spring.config;
 
+/**
+ * Utility class that contains constant names for beans used in the framework.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public final class BeanNames {
 
     public static final String OBJECT_FACTORY_NAME          = "rulii.objectFactory";

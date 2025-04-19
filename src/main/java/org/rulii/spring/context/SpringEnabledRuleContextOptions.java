@@ -30,6 +30,13 @@ import java.time.Clock;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * Represents a set of options for a rule context with Spring integration.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class SpringEnabledRuleContextOptions implements RuleContextOptions {
 
     private final BindingMatchingStrategy matchingStrategy;
@@ -42,6 +49,19 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     private final Clock clock;
     private final Locale locale;
 
+    /**
+     * Constructs a new instance of SpringEnabledRuleContextOptions with the provided parameters.
+     *
+     * @param matchingStrategy The BindingMatchingStrategy to use
+     * @param parameterResolver The ParameterResolver to use
+     * @param messageFormatter The MessageFormatter to use
+     * @param converterRegistry The ConverterRegistry to use
+     * @param objectFactory The ObjectFactory to use
+     * @param messageResolver The MessageResolver to use
+     * @param executorService The ExecutorService to use
+     * @param clock The Clock to use
+     * @param locale The Locale to use
+     */
     public SpringEnabledRuleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                            MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
                                            ObjectFactory objectFactory, MessageResolver messageResolver, ExecutorService executorService,

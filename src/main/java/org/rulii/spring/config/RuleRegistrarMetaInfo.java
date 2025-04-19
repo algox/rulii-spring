@@ -19,24 +19,15 @@ package org.rulii.spring.config;
 
 import java.util.Arrays;
 
-public class RuleRegistrarMetaInfo {
-
-    private final String[] rulePackages;
-    private final int ruleCount;
-
-    public RuleRegistrarMetaInfo(String[] rulePackages, int ruleCount) {
-        super();
-        this.rulePackages = rulePackages;
-        this.ruleCount = ruleCount;
-    }
-
-    public String[] getRulePackages() {
-        return rulePackages;
-    }
-
-    public int getRuleCount() {
-        return ruleCount;
-    }
+/**
+ * Represents meta information about the rules registered within a rule registrar.
+ * Contains the rule packages and the total count of rules registered.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
+public record RuleRegistrarMetaInfo(String[] rulePackages, int ruleCount) {
 
     @Override
     public String toString() {

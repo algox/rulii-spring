@@ -36,6 +36,13 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.Arrays;
 
+/**
+ * RuleRegistrar is a class that implements ImportBeanDefinitionRegistrar to register rule classes in the Spring application context.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleRegistrar.class);
 
@@ -52,6 +59,13 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         registerMetaInfo(rulePackages, count, registry, importBeanNameGenerator);
     }
 
+    /**
+     * Register rules from the specified packages into the given BeanDefinitionRegistry.
+     *
+     * @param rulePackages an array of strings representing the packages to scan for rule classes
+     * @param registry the BeanDefinitionRegistry where the rules will be registered
+     * @return the total number of rules successfully registered
+     */
     public int registerRules(String[] rulePackages, BeanDefinitionRegistry registry) {
         RuleBeanDefinitionScanner scanner = new RuleBeanDefinitionScanner();
         LOGGER.info("Scanning for Rules under [" + Arrays.toString(rulePackages) + "]");
@@ -68,6 +82,14 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         return result;
     }
 
+    /**
+     * Register a rule with the specified bean name, bean definition, and registry.
+     *
+     * @param beanName the name of the bean to register
+     * @param beanDefinition the BeanDefinition of the rule
+     * @param registry the BeanDefinitionRegistry where the rule will be registered
+     * @return true if the rule was successfully registered, false otherwise
+     */
     private boolean registerRule(String beanName, BeanDefinition beanDefinition, BeanDefinitionRegistry registry) {
         Class<?> ruleClass = getClass(beanDefinition.getBeanClassName());
 
@@ -91,6 +113,14 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         return true;
     }
 
+    /**
+     * Register the meta information for rules in the given packages into the provided BeanDefinitionRegistry.
+     *
+     * @param rulePackages              an array of strings representing the packages to scan for rule classes
+     * @param ruleCount                 the total number of rules successfully registered
+     * @param registry                  the BeanDefinitionRegistry where the meta information will be registered
+     * @param importBeanNameGenerator   the BeanNameGenerator for generating bean names
+     */
     private void registerMetaInfo(String[] rulePackages, int ruleCount, BeanDefinitionRegistry registry, BeanNameGenerator importBeanNameGenerator) {
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RuleRegistrarMetaInfo.class);
         builder.addConstructorArgValue(rulePackages);
@@ -99,6 +129,13 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         registry.registerBeanDefinition(importBeanNameGenerator.generateBeanName(definition, registry), definition);
     }
 
+    /**
+     * Get the package names for scanning based on the provided rule bean packages and import class name.
+     *
+     * @param ruleBeanPackages an array of strings representing the rule bean packages
+     * @param importClassName the class name used for import
+     * @return an array of strings representing the package names for scanning
+     */
     private String[] getPackageNamesForScanning(String[] ruleBeanPackages, String importClassName) {
         if (ruleBeanPackages != null && ruleBeanPackages.length > 0) return ruleBeanPackages;
 
@@ -108,6 +145,12 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         return new String[] {importClass.getPackageName()};
     }
 
+    /**
+     * Retrieves the Class object for the given class name. If the class is found, it will return the Class object, otherwise it will return null.
+     *
+     * @param className the name of the class to retrieve
+     * @return the Class object for the specified class name, or null if the class is not found
+     */
     private Class<?> getClass(String className) {
         try {
             return ClassUtils.forName(className, null);
@@ -116,6 +159,13 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
         }
     }
 
+    /**
+     * Retrieves the attributes associated with a given name from a MultiValueMap.
+     *
+     * @param attributes the MultiValueMap containing the attributes
+     * @param name the name of the attribute to retrieve
+     * @return an array of strings representing the attributes associated with the given name, or null if not found
+     */
     private String[] getAttributes(MultiValueMap<String, Object> attributes, String name) {
         return attributes.containsKey(name) ? (String[]) attributes.getFirst(name) : null;
     }

@@ -25,10 +25,23 @@ import org.springframework.core.convert.TypeDescriptor;
 
 import java.lang.reflect.Type;
 
+/**
+ * Adapter class that implements the Converter interface to adapt Spring's ConversionService for conversion between objects.
+ * This class provides methods to convert objects using the specified ConversionService.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class SpringConverterAdapter implements Converter<Object, Object> {
 
     private final ConversionService conversionService;
 
+    /**
+     * Constructs a new SpringConverterAdapter with the specified ConversionService.
+     *
+     * @param conversionService the ConversionService to be used for conversion
+     */
     public SpringConverterAdapter(ConversionService conversionService) {
         super();
         this.conversionService = conversionService;

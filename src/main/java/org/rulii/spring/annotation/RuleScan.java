@@ -22,12 +22,25 @@ import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
 
+/**
+ * Annotation used to enable scanning for rule classes in specified base packages.
+ * Rules found during scanning will be registered in the Spring application context.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
 @Import(RuleRegistrar.class)
 public @interface RuleScan {
 
+    /**
+     * Retrieve the base packages to be scanned for rule classes.
+     *
+     * @return an array of strings representing the base packages for scanning
+     */
     String[] scanBasePackages() default {};
 }
 

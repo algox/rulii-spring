@@ -29,6 +29,13 @@ import org.springframework.util.Assert;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * RuleBeans class represents a utility for handling Rule instances within a ListableBeanFactory context.
+ *
+ * A RuleBeans instance must be initialized with a non-null ListableBeanFactory.
+ * It allows retrieving specific Rule instances based on ID or Class type.
+ * Additionally, it provides a method for handling context refresh events.
+ */
 public class RuleBeans {
 
     private ListableBeanFactory ctx;
@@ -39,10 +46,24 @@ public class RuleBeans {
         this.ctx = ctx;
     }
 
+    /**
+     * Retrieves a Rule instance based on the provided ID.
+     *
+     * @param id the ID of the Rule to retrieve
+     * @return the Rule instance associated with the given ID
+     */
     public Rule getRule(String id) {
         return getCtx().getBean(id, Rule.class);
     }
 
+    /**
+     * Retrieves a Rule instance based on the provided ruleClass.
+     *
+     * @param ruleClass the class type of the Rule to be retrieved
+     * @return the Rule instance associated with the given ruleClass
+     * @throws UnrulyException if no matching Rule is found
+     * @throws NoUniqueBeanDefinitionException if multiple matching Rules are found
+     */
     public Rule getRule(Class<?> ruleClass) {
         List<Rule> matches = getCtx().getBeansOfType(Rule.class).values()
                 .stream()
@@ -59,13 +80,32 @@ public class RuleBeans {
         return matches.get(0);
     }
 
+    /**
+     * Handles the ContextClosedEvent by setting the ListableBeanFactory ctx to null.
+     * This method is annotated with @EventListener to indicate that it is an event listener for ContextClosedEvent.
+     *
+     * @param ctxClosedEvent the ContextClosedEvent to be handled
+     */
     @EventListener
     public void handleContextRefreshEvent(ContextClosedEvent ctxClosedEvent) {
         this.ctx = null;
     }
 
+    /**
+     * Retrieve the ListableBeanFactory used by the RuleBeans instance.
+     *
+     * @return the ListableBeanFactory instance for handling Rule instances within a context
+     * @throws UnrulyException if the application context is closed
+     */
     private ListableBeanFactory getCtx() {
         if (ctx == null) throw new UnrulyException("Application Context is closed.");
         return ctx;
+    }
+
+    @Override
+    public String toString() {
+        return "RuleBeans{" +
+                "ctx=" + ctx +
+                '}';
     }
 }

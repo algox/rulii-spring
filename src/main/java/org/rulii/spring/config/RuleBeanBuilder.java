@@ -20,13 +20,27 @@ package org.rulii.spring.config;
 import org.rulii.rule.Rule;
 import org.rulii.util.reflect.ObjectFactory;
 
-public final class RuleBeanBuilder {
+/**
+ * RuleBeanBuilder is a final class that provides a static method to build a Rule object based on the input ruleClass and objectFactory.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
+final class RuleBeanBuilder {
 
     private RuleBeanBuilder() {
         super();
     }
 
-    public static Rule build(Class<?> ruleClass, ObjectFactory objectFactory) {
+    /**
+     * Build a Rule object based on the input ruleClass and ObjectFactory.
+     *
+     * @param ruleClass the class representing the rule
+     * @param objectFactory the factory for creating rule objects
+     * @return a Rule object built using the specified ruleClass and objectFactory
+     */
+    static Rule build(Class<?> ruleClass, ObjectFactory objectFactory) {
         return Rule.builder().build(ruleClass, objectFactory);
     }
 }

@@ -23,10 +23,17 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = {"org.rulii.spring"})
+/**
+ * Represents a Spring Boot application class that implements CommandLineRunner interface.
+ * This class is used to start the Spring Boot application and handle command-line arguments.
+ *
+ * @author Max Arulananthan
+ *
+ */
+@SpringBootApplication(scanBasePackages = {"org.rulii.spring.test"})
 public class TestApplication implements CommandLineRunner {
 
-    private static Logger LOG = LoggerFactory.getLogger(TestApplication.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestApplication.class);
 
     public static void main(String[] args) {
         LOG.info("Starting App");

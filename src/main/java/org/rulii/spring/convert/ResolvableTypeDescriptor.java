@@ -20,9 +20,18 @@ package org.rulii.spring.convert;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.TypeDescriptor;
 
-public class ResolvableTypeDescriptor extends TypeDescriptor {
+/**
+ * Represents a descriptor for a resolvable type.
+ * Extends TypeDescriptor class and provides a constructor that takes a ResolvableType as a parameter.
+ */
+class ResolvableTypeDescriptor extends TypeDescriptor {
 
-    public ResolvableTypeDescriptor(ResolvableType resolvableType) {
+    /**
+     * Constructs a ResolvableTypeDescriptor object with the given ResolvableType.
+     *
+     * @param resolvableType the ResolvableType object to be used in the ResolvableTypeDescriptor
+     */
+    ResolvableTypeDescriptor(ResolvableType resolvableType) {
         super(resolvableType, null, null);
     }
 }

@@ -25,11 +25,19 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 
 import java.util.List;
 
+/**
+ * A BeanDefinitionRegistryPostProcessor implementation for handling registration of Rule beans in the Spring application context.
+ * This class scans for Rule classes in specified base packages and registers them in the BeanDefinitionRegistry.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ *
+ */
 public class RuleBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBeanDefinitionRegistryPostProcessor.class);
     private final List<String> basePackages;
 
-    public RuleBeanDefinitionRegistryPostProcessor(List<String> basePackages) {
+    RuleBeanDefinitionRegistryPostProcessor(List<String> basePackages) {
         super();
         this.basePackages = basePackages;
     }
