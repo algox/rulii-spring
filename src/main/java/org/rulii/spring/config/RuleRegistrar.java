@@ -68,7 +68,7 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
      */
     public int registerRules(String[] rulePackages, BeanDefinitionRegistry registry) {
         RuleBeanDefinitionScanner scanner = new RuleBeanDefinitionScanner();
-        LOGGER.info("Scanning for Rules under [" + Arrays.toString(rulePackages) + "]");
+        LOGGER.info("Scanning for Rules under  " + Arrays.toString(rulePackages));
         scanner.scanForRules(rulePackages);
 
         int result = 0;
@@ -79,6 +79,7 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
             if (registered) result++;
         }
 
+        LOGGER.info("Rule registration complete. Found [" + result + "] rules.");
         return result;
     }
 

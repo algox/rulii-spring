@@ -22,6 +22,7 @@ import org.rulii.convert.Converter;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Type;
 
@@ -44,6 +45,7 @@ public class SpringConverterAdapter implements Converter<Object, Object> {
      */
     public SpringConverterAdapter(ConversionService conversionService) {
         super();
+        Assert.notNull(conversionService, "conversionService cannot be null.");
         this.conversionService = conversionService;
     }
 

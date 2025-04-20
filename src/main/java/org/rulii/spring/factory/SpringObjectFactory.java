@@ -17,9 +17,7 @@
  */
 package org.rulii.spring.factory;
 
-import org.rulii.model.UnrulyException;
 import org.rulii.util.reflect.DefaultObjectFactory;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
@@ -35,32 +33,29 @@ import org.springframework.context.event.EventListener;
 public class SpringObjectFactory extends DefaultObjectFactory {
 
     // Underlying Spring Factory that does the real work.
-    private ListableBeanFactory ctx;
+    private AutowireCapableBeanFactory ctx;
 
     /**
      * Constructs a new SpringObjectFactory with the specified ListableBeanFactory.
      *
      * @param ctx the ListableBeanFactory to integrate with Spring for creating instances of rules
      */
-    public SpringObjectFactory(ListableBeanFactory ctx) {
+    public SpringObjectFactory(AutowireCapableBeanFactory ctx) {
         super(false);
         this.ctx = ctx;
     }
 
     /**
-     * Creates an instance of the specified rule class by leveraging the Spring IoC container.
+     * Creates an instance of the specified type by leveraging the underlying Spring IoC container.
      *
-     * @param ruleClass the class representing the rule to be created
-     * @return an instance of the specified rule class created by the Spring IoC container
-     * @throws UnrulyException if an issue occurs during the creation of the rule instance
+     * @param <T> the type of the instance to be created
+     * @param type the class representing the type of object to be created
+     * @param isUseCache a boolean value indicating whether caching should be used
+     * @return an instance of the specified type created by the Spring IoC container
      */
-    public <T> T createRule(Class<T> ruleClass) throws UnrulyException {
-
-        if (ctx instanceof AutowireCapableBeanFactory autowireCapableBeanFactory) {
-            return autowireCapableBeanFactory.createBean(ruleClass);
-        }
-
-        return super.createRule(ruleClass);
+    @Override
+    public <T> T create(Class<T> type, boolean isUseCache) {
+        return ctx.createBean(type);
     }
 
     /**

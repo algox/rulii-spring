@@ -20,10 +20,17 @@ package org.rulii.spring.test.rules.seta;
 import org.rulii.annotation.Given;
 import org.rulii.annotation.Rule;
 import org.rulii.annotation.Then;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 @Rule
 public class TestRule2 {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestRule2.class);
+
+    @Value("${test.value.1}")
+    private String externalValue;
     public TestRule2() {
         super();
     }
@@ -35,9 +42,13 @@ public class TestRule2 {
 
     @Then
     public void then() {
-        System.err.println("XXX TestRule2");
+        LOGGER.info("XXX TestRule2");
     }
 
     @Then
     public void then(Integer x) {}
+
+    public String getExternalValue() {
+        return externalValue;
+    }
 }

@@ -20,10 +20,9 @@ package org.rulii.spring.config;
 import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContextOptions;
+import org.rulii.convert.Converter;
 import org.rulii.convert.ConverterRegistry;
-import org.rulii.convert.DefaultConverterRegistry;
 import org.rulii.registry.RuleRegistry;
-import org.rulii.spring.RuleBeans;
 import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
@@ -37,15 +36,17 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.ConversionService;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
@@ -87,17 +88,6 @@ public class RuleConfig {
     }
 
     /**
-     * Creates a MessageFormatter instance if no other bean of type MessageFormatter is available.
-     *
-     * @return a new instance of MessageFormatter
-     */
-    @Bean
-    @ConditionalOnMissingBean(MessageFormatter.class)
-    public MessageFormatter messageFormatter() {
-        return MessageFormatter.builder().build();
-    }
-
-    /**
      * Creates a new MessageResolver instance if no other bean of type MessageResolver is available.
      *
      * @return a new MessageResolver instance
@@ -109,6 +99,17 @@ public class RuleConfig {
     }
 
     /**
+     * Creates a MessageFormatter instance if no other bean of type MessageFormatter is available.
+     *
+     * @return a new instance of MessageFormatter
+     */
+    @Bean
+    @ConditionalOnMissingBean(MessageFormatter.class)
+    public MessageFormatter messageFormatter() {
+        return MessageFormatter.builder().build();
+    }
+
+    /**
      * Creates an ObjectFactory instance if no other bean of type ObjectFactory is available.
      *
      * @param beanFactory the BeanFactory to use for object creation
@@ -117,10 +118,14 @@ public class RuleConfig {
     @Bean(name = BeanNames.OBJECT_FACTORY_NAME)
     @ConditionalOnMissingBean(ObjectFactory.class)
     public ObjectFactory objectFactory(BeanFactory beanFactory) {
+
+        if (!(beanFactory instanceof AutowireCapableBeanFactory)) {
+            LOGGER.warn("Unable to create SpringObjectFactory. Environment does not support AutowireCapableBeanFactory.");
+            return ObjectFactory.builder().build();
+        }
+
         // Use Spring to create the Objects
-        return beanFactory instanceof ListableBeanFactory
-                ? new SpringObjectFactory((ListableBeanFactory) beanFactory)
-                : ObjectFactory.builder().build();
+        return new SpringObjectFactory((AutowireCapableBeanFactory) beanFactory);
     }
 
     /**
@@ -132,10 +137,18 @@ public class RuleConfig {
      */
     @Bean(name = BeanNames.SPRING_CONVERTER_REGISTRY)
     @ConditionalOnMissingBean(ConverterRegistry.class)
-    public ConverterRegistry converterRegistry(@Autowired(required = false) ConversionService conversionService,
+    public ConverterRegistry converterRegistry(@Autowired(required = false) Set<Converter<?, ?>> converters,
+                                               @Autowired(required = false) ConversionService conversionService,
                                                @Value("${rulii.converts.registerDefaults:true}") boolean registerDefaults) {
-        ConverterRegistry result = new DefaultConverterRegistry(registerDefaults);
-        result.register(new SpringConverterAdapter(conversionService));
+        ConverterRegistry result = ConverterRegistry.builder(registerDefaults).build();
+        // Register custom converters
+        if (converters != null && !converters.isEmpty()) {
+            converters.forEach(converter -> {
+                LOGGER.info("Registering custom Converter [" + converter.getClass() + "]");
+                result.register(converter);
+            });
+        }
+        if (conversionService != null) result.register(new SpringConverterAdapter(conversionService));
         return result;
     }
 
@@ -147,8 +160,9 @@ public class RuleConfig {
      */
     @Bean(BeanNames.RULE_REGISTRY)
     @ConditionalOnMissingBean(RuleRegistry.class)
-    public RuleRegistry ruleRegistry(ApplicationContext ctx) {
-        return new SpringRuleRegistry(ctx);
+    public RuleRegistry ruleRegistry(@Autowired(required = false) ListableBeanFactory ctx) {
+        if (ctx == null) LOGGER.warn("Unable to create SpringRuleRegistry. Environment does not support ListableBeanFactory.");
+        return ctx != null ? new SpringRuleRegistry(ctx) : RuleRegistry.builder().build();
     }
 
     /**
@@ -181,19 +195,8 @@ public class RuleConfig {
     @Bean
     @ConditionalOnMissingBean(RuleRegistrarMetaInfo.class)
     public RuleBeanDefinitionRegistryPostProcessor rulePostProcessor(BeanFactory factory) {
-        LOGGER.warn("@RuleScan not set. Rulii will try to auto register the rules.");
-        return new RuleBeanDefinitionRegistryPostProcessor(AutoConfigurationPackages.has(factory) ? AutoConfigurationPackages.get(factory) : null);
-    }
-
-    /**
-     * Creates a RuleBeans instance if no other bean of type RuleBeans is available.
-     *
-     * @param factory the ListableBeanFactory to use for initializing RuleBeans
-     * @return a new RuleBeans instance
-     */
-    @Bean(BeanNames.RULE_BEAN)
-    @ConditionalOnMissingBean(RuleBeans.class)
-    public RuleBeans ruleBean(ListableBeanFactory factory) {
-        return new RuleBeans(factory);
+        List<String> locations = AutoConfigurationPackages.has(factory) ? AutoConfigurationPackages.get(factory) : null;
+        LOGGER.warn("@RuleScan not set. Rulii will try to auto register the rules starting at location " + locations);
+        return new RuleBeanDefinitionRegistryPostProcessor(locations);
     }
 }

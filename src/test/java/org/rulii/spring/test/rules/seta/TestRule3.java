@@ -21,12 +21,14 @@ import org.rulii.annotation.Given;
 import org.rulii.annotation.Otherwise;
 import org.rulii.annotation.Rule;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.util.Assert;
 
 @Rule
 public class TestRule3 {
 
     public TestRule3(@Qualifier("testRule2") org.rulii.rule.Rule rule2) {
         super();
+        Assert.notNull(rule2, "rule2 cannot be null.");
     }
 
     @Given

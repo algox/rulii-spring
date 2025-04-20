@@ -22,14 +22,12 @@ import org.rulii.model.UnrulyException;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.util.Assert;
 
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Represents a registry for managing rules within a Spring ApplicationContext.
@@ -41,14 +39,14 @@ import java.util.stream.Collectors;
  */
 public class SpringRuleRegistry implements RuleRegistry {
 
-    private ApplicationContext ctx;
+    private ListableBeanFactory ctx;
 
     /**
      * Initializes a new SpringRuleRegistry with the specified ApplicationContext.
      *
      * @param ctx the ApplicationContext to be used
      */
-    public SpringRuleRegistry(ApplicationContext ctx) {
+    public SpringRuleRegistry(ListableBeanFactory ctx) {
         super();
         Assert.notNull(ctx, "ctx cannot be null.");
         this.ctx = ctx;
@@ -89,45 +87,12 @@ public class SpringRuleRegistry implements RuleRegistry {
         return getCtx().getBean(name, type);
     }
 
-    @Override
-    public Rule getRule(String name) {
-        Assert.notNull(name, "name cannot be null.");
-        return get(name, Rule.class);
-    }
-
-    @Override
-    public <T> List<Rule> getRule(Class<T> ruleClass) {
-        Assert.notNull(ruleClass, "ruleClass cannot be null.");
-        return getRules((Rule r) -> r.getTarget().getClass().equals(ruleClass));
-    }
-
-    @Override
-    public List<Rule> getRules(Predicate<Rule> filter) {
-        Assert.notNull(filter, "filter cannot be null.");
-        return getRules().stream()
-                .filter(filter)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Rule> getRulesInPackage(String packageName) {
-        Assert.notNull(packageName, "packageName cannot be null.");
-        return getRules((Rule r) -> r.getTarget().getClass().getPackageName().equals(packageName));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public RuleSet<?> getRuleSet(String name) {
-        Assert.notNull(name, "name cannot be null.");
-        return get(name, RuleSet.class);
-    }
-
     /**
      * Retrieves the application context.
      *
      * @return The application context instance.
      */
-    private ApplicationContext getCtx() {
+    private ListableBeanFactory getCtx() {
         if (ctx == null) throw new UnrulyException("Application Context is closed.");
         return ctx;
     }

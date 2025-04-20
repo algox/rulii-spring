@@ -19,17 +19,20 @@ package org.rulii.spring.test.config;
 
 import org.rulii.model.action.Actions;
 import org.rulii.model.condition.Conditions;
+import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
-import org.rulii.spring.RuleBeans;
 import org.rulii.spring.annotation.RuleScan;
+import org.rulii.spring.test.model.Person;
 import org.rulii.spring.test.rules.seta.TestRule1;
 import org.rulii.spring.test.rules.seta.TestRule2;
 import org.rulii.spring.test.rules.seta.TestRule3;
 import org.rulii.util.reflect.ObjectFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 
 /**
  * Configuration class for setting up test rules.
@@ -40,19 +43,25 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @RuleScan(scanBasePackages = "org.rulii.spring.test")
+@PropertySource("classpath:rules.properties")
 public class TestConfig {
-
-    @Autowired
-    private ObjectFactory objectFactory;
-    @Autowired
-    private RuleBeans ruleBeans;
 
     public TestConfig() {
         super();
     }
 
+    @Bean
+    public ConversionService conversionService() {
+        return new DefaultConversionService();
+    }
+
+    @Bean
+    public Person person1() {
+        return new Person("Michael", "Jordan", 50);
+    }
+
     @Bean("testRule55")
-    public Rule testRule55() {
+    public Rule testRule55(ObjectFactory objectFactory) {
         return Rule.builder()
                 .with(TestRule1.class, objectFactory)
                 .build();
@@ -68,13 +77,13 @@ public class TestConfig {
     }
 
     @Bean
-    public RuleSet<?> testRuleSet() {
+    public RuleSet<?> testRuleSet(ObjectFactory objectFactory, RuleRegistry ruleRegistry) {
         return RuleSet.builder()
                 .with("TestRuleSet1")
                 .rule(Rule.builder().build(TestRule1.class, objectFactory))
                 .rule(Rule.builder().build(TestRule2.class))
-                .rule(ruleBeans.getRule(TestRule3.class))
-                .rule(ruleBeans.getRule("testRule4"))
+                .rule(ruleRegistry.getRule(TestRule3.class))
+                .rule(ruleRegistry.getRule("testRule4"))
                 .build();
     }
 }

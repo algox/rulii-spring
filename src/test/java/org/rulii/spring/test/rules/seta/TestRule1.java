@@ -20,12 +20,22 @@ package org.rulii.spring.test.rules.seta;
 import org.rulii.annotation.Given;
 import org.rulii.annotation.Rule;
 import org.rulii.annotation.Then;
+import org.rulii.spring.test.model.Person;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 @Rule(name = "testRule1")
 public class TestRule1 {
 
-    public TestRule1() {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestRule1.class);
+
+    private final Person person;
+
+    public TestRule1(Person person) {
         super();
+        Assert.notNull(person, "person cannot be null.");
+        this.person = person;
     }
 
     @Given
@@ -35,9 +45,13 @@ public class TestRule1 {
 
     @Then
     public void then() {
-        System.err.println("XXX TestRule1");
+        LOGGER.info("XXX TestRule1 [" + person + "]");
     }
 
     @Then
     public void then(Integer x) {}
+
+    public Person getPerson() {
+        return person;
+    }
 }

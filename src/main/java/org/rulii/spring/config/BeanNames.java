@@ -29,7 +29,6 @@ public final class BeanNames {
     public static final String OBJECT_FACTORY_NAME          = "rulii.objectFactory";
     public static final String SPRING_CONVERTER_REGISTRY    = "rulii.converterRegistry";
     public static final String RULE_REGISTRY                = "rulii.ruleRegistry";
-    public static final String RULE_BEAN                    = "rulii.ruleBean";
 
     private BeanNames() {
         super();
