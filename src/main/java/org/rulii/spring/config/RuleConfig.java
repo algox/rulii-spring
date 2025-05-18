@@ -27,6 +27,7 @@ import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
 import org.rulii.spring.registry.SpringRuleRegistry;
+import org.rulii.spring.text.SpringEnvironmentMessageResolver;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
 import org.rulii.util.reflect.ObjectFactory;
@@ -42,6 +43,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.env.Environment;
 
 import java.time.Clock;
 import java.util.List;
@@ -94,8 +96,8 @@ public class RuleConfig {
      */
     @Bean
     @ConditionalOnMissingBean(MessageResolver.class)
-    public MessageResolver messageResolver() {
-        return MessageResolver.builder().build();
+    public MessageResolver messageResolver(Environment environment) {
+        return new SpringEnvironmentMessageResolver(environment);
     }
 
     /**
