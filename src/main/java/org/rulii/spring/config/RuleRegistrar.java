@@ -41,7 +41,6 @@ import java.util.Arrays;
  *
  * @author Max Arulananthan
  * @since 1.0
- *
  */
 public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleRegistrar.class);
@@ -79,7 +78,7 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
             if (registered) result++;
         }
 
-        LOGGER.info("Rule registration complete. Found [" + result + "] rules.");
+        LOGGER.info("Rule registration complete. Found [" + result + "] rule(s).");
         return result;
     }
 

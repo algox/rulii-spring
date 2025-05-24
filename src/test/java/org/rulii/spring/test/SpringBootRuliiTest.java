@@ -19,6 +19,7 @@ package org.rulii.spring.test;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.rulii.bind.Bindings;
 import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContext;
@@ -29,6 +30,7 @@ import org.rulii.convert.text.TextToCurrencyConverter;
 import org.rulii.model.UnrulyException;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
+import org.rulii.rule.RuleResult;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
@@ -41,19 +43,22 @@ import org.rulii.spring.test.rules.setb.TestRule12;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
 import org.rulii.util.reflect.ObjectFactory;
+import org.rulii.validation.RuleViolations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.Currency;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * This class represents a Spring Boot test class for Rulii framework. It performs various tests related to rule context and rule registry components.
+ * This class represents a Spring Boot test class for Rulii framework. It performs various tests related to
+ * rule context and rule registry components.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -89,6 +94,8 @@ public class SpringBootRuliiTest {
     private Rule testRule3;
     @Autowired
     private Rule testRule12;
+    @Autowired
+    private Rule consistentDateRule;
     @Autowired
     private List<Rule> rules;
     @Autowired
@@ -129,7 +136,7 @@ public class SpringBootRuliiTest {
         assertNotNull(person);
         assertNotNull(testRule1);
         assertNotNull(testRule12);
-        assertEquals(rules.size(), 7);
+        assertEquals(rules.size(), 8);
     }
 
     @Test
@@ -200,7 +207,7 @@ public class SpringBootRuliiTest {
 
     @Test
     public void test13() {
-        assertEquals(ruleRegistry.getCount(), 8);
+        assertEquals(ruleRegistry.getCount(), 9);
     }
 
     @Test
@@ -252,4 +259,19 @@ public class SpringBootRuliiTest {
         ruleSet.run();
     }
 
+    @Test
+    public void test22() {
+        Bindings bindings = Bindings.builder().standard();
+        bindings.bind("fromDate", LocalDate.now());
+        bindings.bind("toDate", LocalDate.of(1980, Month.JANUARY, 1));
+        bindings.bind("violations", new RuleViolations());
+
+        RuleContext context = RuleContext.builder()
+                .with(ruleContextOptions)
+                .bindings(bindings)
+                .build();
+
+        // Run the Rule
+        RuleResult result = consistentDateRule.run(context);
+    }
 }
