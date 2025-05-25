@@ -30,6 +30,9 @@ _Rulii Spring_ brings Rulii into the Spring ecosystem, allowing developers to de
 ** If @RuleScan is not specified, the package of the SpringBoot application will be used.
 
 **Example: Spring Configuration**
+
+**[Example Found here](https://github.com/algox/rulii-samples/tree/develop/spring-boot-sample)**
+
 ```java
 
 @Configuration
