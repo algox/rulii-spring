@@ -23,6 +23,23 @@ _Rulii Spring_ brings Rulii into the Spring ecosystem, allowing developers to de
 * Supports externalizing Rule messages to application.yaml or application.properties
 * Supports default parameter values using Spring’s conversion system.
 
+## Getting started
+_Add the dependency_
+
+Maven
+```xml
+<dependency>
+    <groupId>org.rulii</groupId>
+    <artifactId>rulii-spring</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+Grade
+```groovy
+compile 'org.rulii:rulii-spring:1.0.0'
+```
+
 **Configuration**
 ```java
 @RuleScan(scanBasePackages = "base package of your rules")
