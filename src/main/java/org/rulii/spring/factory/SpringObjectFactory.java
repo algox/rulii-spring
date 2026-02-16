@@ -21,6 +21,7 @@ import org.rulii.util.reflect.DefaultObjectFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.util.Assert;
 
 /**
  * An extension of DefaultObjectFactory that integrates with a Spring ListableBeanFactory to create instances of rules.
@@ -55,6 +56,7 @@ public class SpringObjectFactory extends DefaultObjectFactory {
      */
     @Override
     public <T> T create(Class<T> type, boolean isUseCache) {
+        Assert.notNull(ctx, "Spring ctx has closed. Cannot create new instances of rules.");
         return ctx.createBean(type);
     }
 
