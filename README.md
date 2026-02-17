@@ -1,23 +1,24 @@
-[Rulii Maven Central]:http://search.maven.org/#artifactdetails|org.rulii|rulii-spring|1.0.0|
+[rulii Maven Central]:http://search.maven.org/#artifactdetails|org.rulii|rulii-spring|1.0.0|
 [Apache 2.0 License]:https://opensource.org/licenses/Apache-2.0
 
-# _Rulii Spring_
-**Spring support for Rulii**
+# _rulii Spring_
+**Spring support for rulii**
 
 ---
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-orange.svg)][Apache 2.0 License]
-[![Maven Central Version](https://img.shields.io/maven-central/v/org.rulii/rulii-spring)][Rulii Maven Central]
+[![Maven Central Version](https://img.shields.io/maven-central/v/org.rulii/rulii-spring)][rulii Maven Central]
 [![Javadoc](https://javadoc.io/badge2/org.rulii/rulii-spring/1.0.0/javadoc.svg)](https://javadoc.io/doc/org.rulii/rulii-spring/1.0.0)
 ![Build](https://github.com/algox/rulii-spring/actions/workflows/maven.yml/badge.svg)
 
 
-_Rulii Spring_ brings Rulii into the Spring ecosystem, allowing developers to define Rules and RuleSets using familiar Spring conventions.
+_rulii Spring_ brings rulii into the Spring ecosystem, allowing developers to define Rules and RuleSets using familiar Spring conventions.
 
+### [You can find the full documentation at rulii.com](https://rulii.com/spring/00-introduction.html)
 
 ## Features
 
-* Enables auto-configuration of Rulii options in Spring applications.
+* Enables auto-configuration of rulii options in Spring applications.
 * Enables automatic discovery of Rules within the application context.
 * Enables the use of Spring-managed Beans directly in Rules.
 * Supports externalizing Rule messages to application.yaml or application.properties
