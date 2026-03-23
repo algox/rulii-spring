@@ -6,6 +6,8 @@ import org.rulii.context.RuleContext;
 import org.rulii.script.Script;
 import org.rulii.spring.script.el.SpringELScriptProcessorFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ScriptTests {
 
     public ScriptTests() {
@@ -22,7 +24,7 @@ public class ScriptTests {
                 .build();
 
         int result = script.run(ctx);
-        System.err.println(result);
-        System.err.println((Integer) ctx.getBindings().getValue("c"));
+        assertEquals(30, result);
+        assertEquals(30, (Integer) ctx.getBindings().getValue("c"));
     }
 }
