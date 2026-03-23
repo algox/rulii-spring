@@ -35,7 +35,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>1.1.0</rulii.version>
+        <rulii.version>1.2.0-SNAPSHOT</rulii.version>
         <spring.beans.version>6.2.5</spring.beans.version>
         <spring.context.version>6.2.5</spring.context.version>
         <spring.boot.autoconfigure.version>3.4.4</spring.boot.autoconfigure.version>
@@ -44,6 +44,8 @@
         <junit.version>5.12.1</junit.version>
         <spring.boot.starter.version>3.4.4</spring.boot.starter.version>
         <spring.boot.starter.test.version>3.4.4</spring.boot.starter.test.version>
+        <graalvm.version>24.1.0</graalvm.version>
+        <janino.version>3.1.12</janino.version>
 
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
@@ -96,6 +98,27 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <version>${spring.boot.starter.test.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.js</groupId>
+            <artifactId>js-scriptengine</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js-community</artifactId>
+            <version>${graalvm.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
         </dependency>
 
     </dependencies>

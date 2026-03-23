@@ -106,7 +106,7 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
 
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RuleBeanBuilder.class);
         builder.addConstructorArgValue(ruleClass);
-        builder.addConstructorArgReference(BeanNames.OBJECT_FACTORY_NAME);
+        builder.addConstructorArgReference(BeanNames.OBJECT_FACTORY);
         builder.setFactoryMethod("build");
         registry.registerBeanDefinition(ClassBasedRuleBuilder.getRuleName(ruleClass), builder.getBeanDefinition());
 

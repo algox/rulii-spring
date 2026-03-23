@@ -1,1 +1,2 @@
 org.rulii.spring.config.RuleConfig
+org.rulii.spring.script.graaljs.GraalJsConfig

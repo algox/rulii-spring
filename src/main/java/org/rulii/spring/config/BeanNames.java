@@ -26,9 +26,16 @@ package org.rulii.spring.config;
  */
 public final class BeanNames {
 
-    public static final String OBJECT_FACTORY_NAME          = "rulii.objectFactory";
+    public static final String BINDING_MATCHING_STRATEGY    = "rulii.bindingMatchingStrategy";
+    public static final String MESSAGE_RESOLVER             = "rulii.messageResolver";
+    public static final String PARAMETER_RESOLVER           = "rulii.parameterResolver";
+    public static final String MESSAGE_FORMATTER            = "rulii.messageFormatter";
+    public static final String OBJECT_FACTORY               = "rulii.objectFactory";
     public static final String SPRING_CONVERTER_REGISTRY    = "rulii.converterRegistry";
     public static final String RULE_REGISTRY                = "rulii.ruleRegistry";
+    public static final String SCRIPT_PROCESSOR_REGISTRY    = "rulii.scriptProcessorRegistry";
+    public static final String SPRING_CONTEXT_OPTIONS       = "rulii.springOptions";
+    public static final String SPRING_EL_SCRIPT_FACTORY     = "rulii.springELScriptFactory";
 
     private BeanNames() {
         super();

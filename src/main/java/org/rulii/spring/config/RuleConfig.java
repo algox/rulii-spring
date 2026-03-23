@@ -23,10 +23,13 @@ import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.Converter;
 import org.rulii.convert.ConverterRegistry;
 import org.rulii.registry.RuleRegistry;
+import org.rulii.script.ScriptProcessorFactory;
+import org.rulii.script.ScriptProcessorRegistry;
 import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
 import org.rulii.spring.registry.SpringRuleRegistry;
+import org.rulii.spring.script.el.SpringELScriptProcessorFactory;
 import org.rulii.spring.text.SpringEnvironmentMessageResolver;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
@@ -72,7 +75,7 @@ public class RuleConfig {
      *
      * @return a new instance of BindingMatchingStrategy
      */
-    @Bean
+    @Bean(name = BeanNames.BINDING_MATCHING_STRATEGY)
     @ConditionalOnMissingBean(BindingMatchingStrategy.class)
     public BindingMatchingStrategy bindingMatchingStrategy() {
         return BindingMatchingStrategy.builder().build();
@@ -83,7 +86,7 @@ public class RuleConfig {
      *
      * @return a new instance of ParameterResolver
      */
-    @Bean
+    @Bean(name = BeanNames.PARAMETER_RESOLVER)
     @ConditionalOnMissingBean(ParameterResolver.class)
     public ParameterResolver parameterResolver() {
         return ParameterResolver.builder().build();
@@ -94,7 +97,7 @@ public class RuleConfig {
      *
      * @return a new MessageResolver instance
      */
-    @Bean
+    @Bean(name = BeanNames.MESSAGE_RESOLVER)
     @ConditionalOnMissingBean(MessageResolver.class)
     public MessageResolver messageResolver(Environment environment) {
         return new SpringEnvironmentMessageResolver(environment);
@@ -105,7 +108,7 @@ public class RuleConfig {
      *
      * @return a new instance of MessageFormatter
      */
-    @Bean
+    @Bean(name = BeanNames.MESSAGE_FORMATTER)
     @ConditionalOnMissingBean(MessageFormatter.class)
     public MessageFormatter messageFormatter() {
         return MessageFormatter.builder().build();
@@ -117,7 +120,7 @@ public class RuleConfig {
      * @param beanFactory the BeanFactory to use for object creation
      * @return a new ObjectFactory instance
      */
-    @Bean(name = BeanNames.OBJECT_FACTORY_NAME)
+    @Bean(name = BeanNames.OBJECT_FACTORY)
     @ConditionalOnMissingBean(ObjectFactory.class)
     public ObjectFactory objectFactory(BeanFactory beanFactory) {
 
@@ -167,6 +170,27 @@ public class RuleConfig {
         return ctx != null ? new SpringRuleRegistry(ctx) : RuleRegistry.builder().build();
     }
 
+    @Bean(BeanNames.SCRIPT_PROCESSOR_REGISTRY)
+    @ConditionalOnMissingBean(ScriptProcessorRegistry.class)
+    public ScriptProcessorRegistry scriptProcessorRegistry(@Autowired(required = false) List<ScriptProcessorFactory> factories) {
+        ScriptProcessorRegistry result = ScriptProcessorRegistry.builder().build();
+
+        if (factories != null && !factories.isEmpty()) {
+            factories.forEach(factory -> {
+                LOGGER.info("Registering custom ScriptProcessorFactory [" + factory.getClass() + "]");
+                result.register(factory);
+            });
+        }
+        return result;
+    }
+
+    @Bean(BeanNames.SPRING_EL_SCRIPT_FACTORY)
+    @ConditionalOnMissingBean(SpringELScriptProcessorFactory.class)
+    public SpringELScriptProcessorFactory scriptProcessorFactory(@Value("${spring.el.languageName:el}") String languageName,
+                                                                 @Value("${spring.el.bindingName:ctx}") String bindingName) {
+        return new SpringELScriptProcessorFactory(languageName, bindingName);
+    }
+
     /**
      * Creates a RuleContextOptions instance if no other bean of type RuleContextOptions is available.
      *
@@ -178,14 +202,15 @@ public class RuleConfig {
      * @param messageResolver the MessageResolver to use
      * @return a new instance of RuleContextOptions
      */
-    @Bean
+    @Bean(BeanNames.SPRING_CONTEXT_OPTIONS)
     @ConditionalOnMissingBean(RuleContextOptions.class)
     public RuleContextOptions ruleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                                  MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
-                                                 ObjectFactory objectFactory, MessageResolver messageResolver) {
+                                                 ObjectFactory objectFactory, MessageResolver messageResolver,
+                                                 ScriptProcessorRegistry scriptProcessorRegistry) {
         return new SpringEnabledRuleContextOptions(matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver, Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors())),
-                Clock.systemDefaultZone(), Locale.getDefault());
+                Clock.systemDefaultZone(), Locale.getDefault(), scriptProcessorRegistry);
     }
 
     /**

@@ -21,6 +21,7 @@ import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.ConverterRegistry;
+import org.rulii.script.ScriptProcessorRegistry;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
 import org.rulii.util.reflect.ObjectFactory;
@@ -48,7 +49,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     private final ExecutorService executorService;
     private final Clock clock;
     private final Locale locale;
-
+    private final ScriptProcessorRegistry scriptProcessorRegistry;
     /**
      * Constructs a new instance of SpringEnabledRuleContextOptions with the provided parameters.
      *
@@ -65,7 +66,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     public SpringEnabledRuleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                            MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
                                            ObjectFactory objectFactory, MessageResolver messageResolver, ExecutorService executorService,
-                                           Clock clock, Locale locale) {
+                                           Clock clock, Locale locale, ScriptProcessorRegistry scriptProcessorRegistry) {
         super();
         Assert.notNull(matchingStrategy, "matchingStrategy cannot be null.");
         Assert.notNull(parameterResolver, "parameterResolver cannot be null.");
@@ -85,6 +86,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
         this.executorService = executorService;
         this.clock = clock;
         this.locale = locale;
+        this.scriptProcessorRegistry = scriptProcessorRegistry;
     }
 
     @Override
@@ -133,6 +135,11 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     }
 
     @Override
+    public ScriptProcessorRegistry getScriptProcessorRegistry() {
+        return scriptProcessorRegistry;
+    }
+
+    @Override
     public String toString() {
         return "SpringEnabledRuleContextOptions{" +
                 "matchingStrategy=" + matchingStrategy +
@@ -144,6 +151,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
                 ", locale=" + locale +
                 ", messageResolver=" + messageResolver +
                 ", executorService=" + executorService +
+                ", scriptProcessorRegistry=" + scriptProcessorRegistry +
                 '}';
     }
 }
