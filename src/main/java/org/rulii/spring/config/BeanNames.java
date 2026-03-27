@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,29 @@ package org.rulii.spring.config;
  */
 public final class BeanNames {
 
+    /** Bean name for the {@link org.rulii.bind.match.BindingMatchingStrategy} bean. */
     public static final String BINDING_MATCHING_STRATEGY    = "rulii.bindingMatchingStrategy";
+
+    /** Bean name for the {@link org.rulii.text.MessageResolver} bean. */
     public static final String MESSAGE_RESOLVER             = "rulii.messageResolver";
+
+    /** Bean name for the {@link org.rulii.bind.match.ParameterResolver} bean. */
     public static final String PARAMETER_RESOLVER           = "rulii.parameterResolver";
+
+    /** Bean name for the {@link org.rulii.text.MessageFormatter} bean. */
     public static final String MESSAGE_FORMATTER            = "rulii.messageFormatter";
+
+    /** Bean name for the {@link org.rulii.util.reflect.ObjectFactory} bean. */
     public static final String OBJECT_FACTORY               = "rulii.objectFactory";
+
+    /** Bean name for the {@link org.rulii.convert.ConverterRegistry} bean. */
     public static final String SPRING_CONVERTER_REGISTRY    = "rulii.converterRegistry";
+
+    /** Bean name for the {@link org.rulii.registry.RuleRegistry} bean. */
     public static final String RULE_REGISTRY                = "rulii.ruleRegistry";
-    public static final String SCRIPT_PROCESSOR_REGISTRY    = "rulii.scriptProcessorRegistry";
+
+    /** Bean name for the {@link org.rulii.context.RuleContextOptions} bean. */
     public static final String SPRING_CONTEXT_OPTIONS       = "rulii.springOptions";
-    public static final String SPRING_EL_SCRIPT_FACTORY     = "rulii.springELScriptFactory";
 
     private BeanNames() {
         super();

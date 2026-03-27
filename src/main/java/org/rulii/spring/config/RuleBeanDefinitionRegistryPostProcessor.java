@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,26 @@ public class RuleBeanDefinitionRegistryPostProcessor implements BeanDefinitionRe
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBeanDefinitionRegistryPostProcessor.class);
     private final List<String> basePackages;
 
+    /**
+     * Constructs a new {@code RuleBeanDefinitionRegistryPostProcessor} with the given base packages.
+     *
+     * @param basePackages the list of base packages to scan for {@code @Rule}-annotated classes;
+     *                     may be {@code null} or empty, in which case no rules are registered
+     */
     RuleBeanDefinitionRegistryPostProcessor(List<String> basePackages) {
         super();
         this.basePackages = basePackages;
     }
 
+    /**
+     * Scans the configured base packages for {@code @Rule}-annotated classes and registers
+     * each discovered rule as a bean definition in the provided registry.
+     *
+     * <p>If no base packages are configured, a warning is logged and registration is skipped.</p>
+     *
+     * @param registry the {@link BeanDefinitionRegistry} to register rule bean definitions into
+     * @throws BeansException if bean definition registration fails
+     */
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
 

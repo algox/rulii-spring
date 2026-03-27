@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,10 @@ import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.Converter;
 import org.rulii.convert.ConverterRegistry;
 import org.rulii.registry.RuleRegistry;
-import org.rulii.script.ScriptProcessorFactory;
-import org.rulii.script.ScriptProcessorRegistry;
 import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
 import org.rulii.spring.registry.SpringRuleRegistry;
-import org.rulii.spring.script.el.SpringELScriptProcessorFactory;
 import org.rulii.spring.text.SpringEnvironmentMessageResolver;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
@@ -170,27 +167,6 @@ public class RuleConfig {
         return ctx != null ? new SpringRuleRegistry(ctx) : RuleRegistry.builder().build();
     }
 
-    @Bean(BeanNames.SCRIPT_PROCESSOR_REGISTRY)
-    @ConditionalOnMissingBean(ScriptProcessorRegistry.class)
-    public ScriptProcessorRegistry scriptProcessorRegistry(@Autowired(required = false) List<ScriptProcessorFactory> factories) {
-        ScriptProcessorRegistry result = ScriptProcessorRegistry.builder().build();
-
-        if (factories != null && !factories.isEmpty()) {
-            factories.forEach(factory -> {
-                LOGGER.info("Registering custom ScriptProcessorFactory [" + factory.getClass() + "]");
-                result.register(factory);
-            });
-        }
-        return result;
-    }
-
-    @Bean(BeanNames.SPRING_EL_SCRIPT_FACTORY)
-    @ConditionalOnMissingBean(SpringELScriptProcessorFactory.class)
-    public SpringELScriptProcessorFactory scriptProcessorFactory(@Value("${spring.el.languageName:el}") String languageName,
-                                                                 @Value("${spring.el.bindingName:ctx}") String bindingName) {
-        return new SpringELScriptProcessorFactory(languageName, bindingName);
-    }
-
     /**
      * Creates a RuleContextOptions instance if no other bean of type RuleContextOptions is available.
      *
@@ -206,11 +182,10 @@ public class RuleConfig {
     @ConditionalOnMissingBean(RuleContextOptions.class)
     public RuleContextOptions ruleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                                  MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
-                                                 ObjectFactory objectFactory, MessageResolver messageResolver,
-                                                 ScriptProcessorRegistry scriptProcessorRegistry) {
+                                                 ObjectFactory objectFactory, MessageResolver messageResolver) {
         return new SpringEnabledRuleContextOptions(matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver, Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors())),
-                Clock.systemDefaultZone(), Locale.getDefault(), scriptProcessorRegistry);
+                Clock.systemDefaultZone(), Locale.getDefault());
     }
 
     /**
@@ -223,7 +198,7 @@ public class RuleConfig {
     @ConditionalOnMissingBean(RuleRegistrarMetaInfo.class)
     public RuleBeanDefinitionRegistryPostProcessor rulePostProcessor(BeanFactory factory) {
         List<String> locations = AutoConfigurationPackages.has(factory) ? AutoConfigurationPackages.get(factory) : null;
-        LOGGER.warn("@RuleScan not set. Rulii will try to auto register the rules starting at location " + locations);
+        LOGGER.warn("@RuleScan not set. rulii will try to auto register the rules starting at location " + locations);
         return new RuleBeanDefinitionRegistryPostProcessor(locations);
     }
 }

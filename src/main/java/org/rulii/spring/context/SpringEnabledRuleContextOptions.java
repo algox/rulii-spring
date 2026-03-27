@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.ConverterRegistry;
-import org.rulii.script.ScriptProcessorRegistry;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
 import org.rulii.util.reflect.ObjectFactory;
@@ -49,7 +48,6 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     private final ExecutorService executorService;
     private final Clock clock;
     private final Locale locale;
-    private final ScriptProcessorRegistry scriptProcessorRegistry;
     /**
      * Constructs a new instance of SpringEnabledRuleContextOptions with the provided parameters.
      *
@@ -66,7 +64,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     public SpringEnabledRuleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                            MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
                                            ObjectFactory objectFactory, MessageResolver messageResolver, ExecutorService executorService,
-                                           Clock clock, Locale locale, ScriptProcessorRegistry scriptProcessorRegistry) {
+                                           Clock clock, Locale locale) {
         super();
         Assert.notNull(matchingStrategy, "matchingStrategy cannot be null.");
         Assert.notNull(parameterResolver, "parameterResolver cannot be null.");
@@ -86,7 +84,6 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
         this.executorService = executorService;
         this.clock = clock;
         this.locale = locale;
-        this.scriptProcessorRegistry = scriptProcessorRegistry;
     }
 
     @Override
@@ -135,11 +132,6 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     }
 
     @Override
-    public ScriptProcessorRegistry getScriptProcessorRegistry() {
-        return scriptProcessorRegistry;
-    }
-
-    @Override
     public String toString() {
         return "SpringEnabledRuleContextOptions{" +
                 "matchingStrategy=" + matchingStrategy +
@@ -151,7 +143,6 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
                 ", locale=" + locale +
                 ", messageResolver=" + messageResolver +
                 ", executorService=" + executorService +
-                ", scriptProcessorRegistry=" + scriptProcessorRegistry +
                 '}';
     }
 }

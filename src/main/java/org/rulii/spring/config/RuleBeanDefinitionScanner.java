@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,10 @@ class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
     private boolean ruleScanStarted = false;
     private final List<BeanDefinitionHolder> ruleBeans = new LinkedList<>();
 
+    /**
+     * Constructs a new {@code RuleBeanDefinitionScanner} configured to include only
+     * classes annotated with {@link Rule}.
+     */
     RuleBeanDefinitionScanner() {
         super(new AnnotationConfigApplicationContext(), false);
         addIncludeFilter(new AnnotationTypeFilter(Rule.class));
@@ -56,6 +60,14 @@ class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
         scan(basePackages);
     }
 
+    /**
+     * Intercepts Spring's normal registration path and collects discovered rule bean definitions
+     * into an internal list instead of registering them in the registry directly.
+     * Accumulation only occurs after {@link #scanForRules(String...)} has been called.
+     *
+     * @param definitionHolder the holder containing the bean definition and its name
+     * @param registry         the registry (unused; beans are buffered for external registration)
+     */
     @Override
     protected void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) {
         if (ruleScanStarted) ruleBeans.add(definitionHolder);

@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,17 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.TypeDescriptor;
 
 /**
- * Represents a descriptor for a resolvable type.
- * Extends TypeDescriptor class and provides a constructor that takes a ResolvableType as a parameter.
+ * A {@link TypeDescriptor} backed by a Spring {@link ResolvableType}, enabling
+ * the {@link SpringConverterAdapter} to pass generic type information to the
+ * Spring {@link org.springframework.core.convert.ConversionService}.
+ *
+ * <p>Spring's {@link TypeDescriptor} constructors that accept {@link ResolvableType}
+ * are package-private, so this subclass bridges the gap by exposing a public
+ * constructor for use within the conversion adapter.</p>
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ * @see SpringConverterAdapter
  */
 class ResolvableTypeDescriptor extends TypeDescriptor {
 

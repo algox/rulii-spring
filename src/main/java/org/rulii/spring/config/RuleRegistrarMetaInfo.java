@@ -1,7 +1,7 @@
 /*
  * This software is licensed under the Apache 2 license, quoted below.
  *
- * Copyright (c) 1999-2025, Algorithmx Inc.
+ * Copyright (c) 1999-2026, Algorithmx Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,13 @@ import java.util.Arrays;
 /**
  * Represents meta information about the rules registered within a rule registrar.
  * Contains the rule packages and the total count of rules registered.
+ *
+ * <p>A single instance of this record is registered as a Spring bean by {@link RuleRegistrar}
+ * after rule scanning completes. It can be injected into application components to inspect
+ * which packages were scanned and how many rules were found.</p>
+ *
+ * @param rulePackages the packages that were scanned for {@code @Rule}-annotated classes
+ * @param ruleCount    the total number of rules successfully registered during scanning
  *
  * @author Max Arulananthan
  * @since 1.0
