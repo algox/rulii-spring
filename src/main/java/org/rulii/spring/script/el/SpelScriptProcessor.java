@@ -26,7 +26,9 @@ import org.springframework.expression.PropertyAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link ScriptProcessor} implementation that evaluates Spring Expression Language (SpEL)
@@ -49,8 +51,6 @@ import java.util.*;
 public class SpelScriptProcessor implements ScriptProcessor {
 
     private static final List<PropertyAccessor> PROPERTY_ACCESSORS = List.of(new BindingAccessor());
-
-    private final Map<RuleContext, EvaluationContext> contextCache = Collections.synchronizedMap(new WeakHashMap<>());
 
     private final String languageName;
     private final String bindingName;
@@ -110,7 +110,7 @@ public class SpelScriptProcessor implements ScriptProcessor {
         Assert.notNull(script, "script cannot be null.");
         Assert.notNull(ruleContext, "ruleContext cannot be null.");
 
-        EvaluationContext scriptContext = getContext(ruleContext);
+        EvaluationContext scriptContext = buildContext(ruleContext);
         SpelScript<T> spelScript = (SpelScript<T>) script;
 
         try {
@@ -118,25 +118,6 @@ public class SpelScriptProcessor implements ScriptProcessor {
         } catch (Exception e) {
             throw new EvaluationException(script.getScript(), e.getMessage(), e);
         }
-    }
-
-    /**
-     * Retrieves the {@link EvaluationContext} associated with the given {@link RuleContext}.
-     * If an existing context is not found in the cache, a new context is created using
-     * {@code buildContext(RuleContext)} and stored in the cache.
-     *
-     * @param context the {@link RuleContext} for which the evaluation context is to be retrieved; must not be {@code null}
-     * @return the {@link EvaluationContext} associated with the given {@link RuleContext}; never {@code null}
-     */
-    protected EvaluationContext getContext(RuleContext context) {
-        EvaluationContext result = contextCache.get(context);
-
-        if (result == null) {
-            result = buildContext(context);
-            contextCache.put(context, result);
-        }
-
-        return result;
     }
 
     /**
