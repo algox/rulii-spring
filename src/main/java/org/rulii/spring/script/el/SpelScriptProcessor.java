@@ -87,7 +87,7 @@ public class SpelScriptProcessor implements ScriptProcessor {
      * @return the binding variable name (e.g. {@code "ctx"})
      */
     @Override
-    public String getBindingName() {
+    public String getBindingsName() {
         return bindingName;
     }
 
@@ -95,7 +95,7 @@ public class SpelScriptProcessor implements ScriptProcessor {
      * Evaluates the given {@link SpelScript} against the supplied {@link RuleContext}.
      *
      * <p>The script must be a {@link SpelScript} instance produced by {@link SpelScriptCompiler}.
-     * The rule context's bindings are exposed as a SpEL variable named {@link #getBindingName()},
+     * The rule context's bindings are exposed as a SpEL variable named {@link #getBindingsName()},
      * and a {@link BindingAccessor} is registered to allow bare-name property access.</p>
      *
      * @param <T>         the expected return type
@@ -134,7 +134,7 @@ public class SpelScriptProcessor implements ScriptProcessor {
         result.setPropertyAccessors(PROPERTY_ACCESSORS);
 
         Map<String, Object> vars = new HashMap<>();
-        vars.put(getBindingName(), ruleContext.getBindings());
+        vars.put(getBindingsName(), ruleContext.getBindings());
 
         result.setVariables(vars);
 

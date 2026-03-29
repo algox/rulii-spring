@@ -34,39 +34,39 @@ public class SpelScriptTest {
 
     @Test
     public void testGetLanguageName() {
-        SpelScript<?> script = (SpelScript<?>) compiler.compile("1 + 1", Collections.emptyList());
+        SpelScript<?> script = (SpelScript<?>) compiler.compile("1 + 1", Integer.class);
         assertEquals("el", script.getLanguageName());
     }
 
     @Test
     public void testGetScript() {
         String expr = "#ctx.value * 2";
-        SpelScript<?> script = (SpelScript<?>) compiler.compile(expr, Collections.emptyList());
+        SpelScript<?> script = (SpelScript<?>) compiler.compile(expr, Integer.class);
         assertEquals(expr, script.getScript());
     }
 
     @Test
     public void testGetExpressionIsNotNull() {
-        SpelScript<?> script = (SpelScript<?>) compiler.compile("true", Collections.emptyList());
+        SpelScript<?> script = (SpelScript<?>) compiler.compile("true", Boolean.class);
         assertNotNull(script.getExpression());
     }
 
     @Test
     public void testGetExpressionMatchesInput() {
         Expression expression = parser.parseExpression("1 + 2");
-        SpelScript<?> script = new SpelScript<>("el", "1 + 2", Collections.emptyList(), expression);
+        SpelScript<?> script = new SpelScript<>("el", "1 + 2", Integer.class, expression);
         assertEquals(expression, script.getExpression());
     }
 
     @Test
     public void testNullExpressionThrows() {
         assertThrows(Exception.class, () ->
-                new SpelScript<>("el", "some expr", Collections.emptyList(), null));
+                new SpelScript<>("el", "some expr", Exception.class, null));
     }
 
     @Test
     public void testToString() {
-        SpelScript<?> script = (SpelScript<?>) compiler.compile("42", Collections.emptyList());
+        SpelScript<?> script = (SpelScript<?>) compiler.compile("42", Integer.class);
         String str = script.toString();
         assertNotNull(str);
         assertTrue(str.contains("SpelScript"));

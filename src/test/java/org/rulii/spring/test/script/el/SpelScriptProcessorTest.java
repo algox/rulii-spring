@@ -35,7 +35,7 @@ public class SpelScriptProcessorTest {
     private static final SpelScriptCompiler COMPILER = new SpelScriptCompiler();
 
     private static Script<?> compile(String expr) {
-        return COMPILER.compile(expr, Collections.emptyList());
+        return COMPILER.compile(expr, Object.class);
     }
 
     private static RuleContext contextWith(Bindings bindings) {
@@ -51,7 +51,7 @@ public class SpelScriptProcessorTest {
     @Test
     public void testGetBindingName() {
         SpelScriptProcessor processor = new SpelScriptProcessor("el", "myCtx");
-        assertEquals("myCtx", processor.getBindingName());
+        assertEquals("myCtx", processor.getBindingsName());
     }
 
     @Test

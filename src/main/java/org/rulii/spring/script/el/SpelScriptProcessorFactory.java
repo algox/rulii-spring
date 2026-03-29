@@ -96,7 +96,7 @@ public class SpelScriptProcessorFactory implements ScriptProcessorFactory {
      * @return the binding variable name (e.g. {@code "ctx"})
      */
     @Override
-    public String getBindingName() {
+    public String getBindingsName() {
         return bindingName;
     }
 

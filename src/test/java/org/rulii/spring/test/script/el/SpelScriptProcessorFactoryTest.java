@@ -43,7 +43,7 @@ public class SpelScriptProcessorFactoryTest {
     @Test
     public void testDefaultBindingName() {
         SpelScriptProcessorFactory factory = new SpelScriptProcessorFactory();
-        assertEquals(ScriptOptions.DEFAULT.bindingsName(), factory.getBindingName());
+        assertEquals(ScriptOptions.DEFAULT.bindingsName(), factory.getBindingsName());
     }
 
     @Test
@@ -55,7 +55,7 @@ public class SpelScriptProcessorFactoryTest {
     @Test
     public void testCustomBindingName() {
         SpelScriptProcessorFactory factory = new SpelScriptProcessorFactory("el", "myCtx");
-        assertEquals("myCtx", factory.getBindingName());
+        assertEquals("myCtx", factory.getBindingsName());
     }
 
     @Test
@@ -83,7 +83,7 @@ public class SpelScriptProcessorFactoryTest {
     public void testGetScriptProcessorPropagatesBindingName() {
         SpelScriptProcessorFactory factory = new SpelScriptProcessorFactory("el", "myCtx");
         ScriptProcessor processor = factory.getScriptProcessor();
-        assertEquals("myCtx", processor.getBindingName());
+        assertEquals("myCtx", processor.getBindingsName());
     }
 
     @Test

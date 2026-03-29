@@ -24,8 +24,6 @@ import org.rulii.spring.script.el.SpelScript;
 import org.rulii.spring.script.el.SpelScriptCompiler;
 import org.rulii.spring.script.el.SpelScriptProcessorFactory;
 
-import java.util.Collections;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SpelScriptCompilerTest {
@@ -40,7 +38,7 @@ public class SpelScriptCompilerTest {
     @Test
     public void testCompileReturnsSpelScript() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("1 + 2", Collections.emptyList());
+        Script<?> script = compiler.compile("1 + 2", Integer.class);
         assertNotNull(script);
         assertInstanceOf(SpelScript.class, script);
     }
@@ -49,21 +47,21 @@ public class SpelScriptCompilerTest {
     public void testCompilePreservesScriptText() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
         String expression = "#ctx.value > 10";
-        Script<?> script = compiler.compile(expression, Collections.emptyList());
+        Script<?> script = compiler.compile(expression, Boolean.class);
         assertEquals(expression, script.getScript());
     }
 
     @Test
     public void testCompilePreservesLanguageName() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("#ctx.a + #ctx.b", Collections.emptyList());
+        Script<?> script = compiler.compile("#ctx.a + #ctx.b", Integer.class);
         assertEquals("el", script.getLanguageName());
     }
 
     @Test
     public void testCompilePopulatesExpression() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("2 * 3", Collections.emptyList());
+        Script<?> script = compiler.compile("2 * 3", Integer.class);
         assertInstanceOf(SpelScript.class, script);
         assertNotNull(((SpelScript<?>) script).getExpression());
     }
@@ -71,21 +69,21 @@ public class SpelScriptCompilerTest {
     @Test
     public void testCompileArithmeticExpression() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("#ctx.a + #ctx.b", Collections.emptyList());
+        Script<?> script = compiler.compile("#ctx.a + #ctx.b", Integer.class);
         assertNotNull(script);
     }
 
     @Test
     public void testCompileBooleanExpression() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("#ctx.age >= 18", Collections.emptyList());
+        Script<?> script = compiler.compile("#ctx.age >= 18", Boolean.class);
         assertNotNull(script);
     }
 
     @Test
     public void testCompileStringExpression() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> script = compiler.compile("#ctx.first + ' ' + #ctx.last", Collections.emptyList());
+        Script<?> script = compiler.compile("#ctx.first + ' ' + #ctx.last", String.class);
         assertNotNull(script);
     }
 
@@ -93,7 +91,7 @@ public class SpelScriptCompilerTest {
     public void testCompileInvalidExpressionThrowsBuildScriptException() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
         assertThrows(BuildScriptException.class, () ->
-                compiler.compile("[[[invalid syntax%%%", Collections.emptyList()));
+                compiler.compile("[[[invalid syntax%%%", Exception.class));
     }
 
     @Test
@@ -101,15 +99,15 @@ public class SpelScriptCompilerTest {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
         String badScript = "[[[invalid";
         BuildScriptException ex = assertThrows(BuildScriptException.class, () ->
-                compiler.compile(badScript, Collections.emptyList()));
+                compiler.compile(badScript, Exception.class));
         assertNotNull(ex);
     }
 
     @Test
     public void testCompileMultipleTimesProducesIndependentScripts() {
         SpelScriptCompiler compiler = new SpelScriptCompiler();
-        Script<?> s1 = compiler.compile("1 + 1", Collections.emptyList());
-        Script<?> s2 = compiler.compile("2 + 2", Collections.emptyList());
+        Script<?> s1 = compiler.compile("1 + 1", Integer.class);
+        Script<?> s2 = compiler.compile("2 + 2", Integer.class);
         assertNotEquals(s1.getScript(), s2.getScript());
     }
 }

@@ -100,7 +100,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+        <!--dependency>
             <groupId>org.graalvm.js</groupId>
             <artifactId>js-scriptengine</artifactId>
             <version>${graalvm.version}</version>
@@ -113,7 +113,7 @@
             <version>${graalvm.version}</version>
             <type>pom</type>
             <scope>provided</scope>
-        </dependency>
+        </dependency-->
 
         <dependency>
             <groupId>org.codehaus.janino</groupId>

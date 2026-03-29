@@ -18,11 +18,8 @@
 package org.rulii.spring.script.el;
 
 import org.rulii.script.AbstractScript;
-import org.rulii.script.ScriptParameter;
 import org.springframework.expression.Expression;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * A compiled Spring Expression Language (SpEL) script that wraps a pre-parsed
@@ -43,16 +40,8 @@ public class SpelScript<T> extends AbstractScript<T> {
 
     private final Expression expression;
 
-    /**
-     * Constructs a new {@code SpelScript} with the given metadata and pre-parsed expression.
-     *
-     * @param languageName     the script language identifier (e.g. {@code "el"})
-     * @param script           the original script source text
-     * @param scriptParameters the declared parameters for this script
-     * @param expression       the pre-parsed SpEL {@link Expression}; must not be {@code null}
-     */
-    public SpelScript(String languageName, String script, List<ScriptParameter> scriptParameters, Expression expression) {
-        super(languageName, script, scriptParameters);
+    public SpelScript(String languageName, String script, Class<?> returnType, Expression expression) {
+        super(languageName, script, returnType);
         Assert.notNull(expression, "expression cannot be null.");
         this.expression = expression;
     }

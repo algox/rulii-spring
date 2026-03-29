@@ -20,10 +20,7 @@ package org.rulii.spring.script.el;
 import org.rulii.script.BuildScriptException;
 import org.rulii.script.Script;
 import org.rulii.script.ScriptCompiler;
-import org.rulii.script.ScriptParameter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-
-import java.util.List;
 
 /**
  * A {@link ScriptCompiler} implementation that parses Spring Expression Language (SpEL)
@@ -62,19 +59,11 @@ public class SpelScriptCompiler implements ScriptCompiler {
         return SpelScriptProcessorFactory.LANGUAGE_NAME;
     }
 
-    /**
-     * Parses the given SpEL expression string into a {@link SpelScript}.
-     *
-     * @param <T>        the expected return type of the compiled script
-     * @param script     the SpEL expression source text to compile
-     * @param parameters the declared script parameters (unused by SpEL but stored for metadata)
-     * @return a compiled {@link SpelScript} holding the parsed expression
-     * @throws BuildScriptException if the expression cannot be parsed
-     */
+
     @Override
-    public <T> Script<T> compile(String script, List<ScriptParameter> parameters) {
+    public <T> Script<T> compile(String script, Class<?> resultType) {
         try {
-            return new SpelScript<>(getLanguageName(), script, parameters, parser.parseExpression(script));
+            return new SpelScript<>(getLanguageName(), script, resultType, parser.parseExpression(script));
         } catch (Exception e) {
             throw new BuildScriptException(script, e.getMessage(), e);
         }
