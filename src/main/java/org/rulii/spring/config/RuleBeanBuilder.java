@@ -27,7 +27,7 @@ import org.rulii.util.reflect.ObjectFactory;
  * @since 1.0
  *
  */
-final class RuleBeanBuilder {
+public final class RuleBeanBuilder {
 
     private RuleBeanBuilder() {
         super();
@@ -40,7 +40,7 @@ final class RuleBeanBuilder {
      * @param objectFactory the factory for creating rule objects
      * @return a Rule object built using the specified ruleClass and objectFactory
      */
-    static Rule build(Class<?> ruleClass, ObjectFactory objectFactory) {
+    public static Rule build(Class<?> ruleClass, ObjectFactory objectFactory) {
         return Rule.builder().build(ruleClass, objectFactory);
     }
 }

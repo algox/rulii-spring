@@ -50,6 +50,9 @@ public final class BeanNames {
     /** Bean name for the {@link org.rulii.context.RuleContextOptions} bean. */
     public static final String SPRING_CONTEXT_OPTIONS       = "rulii.springOptions";
 
+    /** Bean name for the {@link org.rulii.script.ScriptProcessorManager} bean. */
+    public static final String SCRIPT_MANAGER               = "rulii.scriptManager";
+
     private BeanNames() {
         super();
     }

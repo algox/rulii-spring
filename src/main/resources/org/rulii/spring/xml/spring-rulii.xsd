@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:rulii="http://www.rulii.org/schema/rulii"
+        targetNamespace="http://www.rulii.org/schema/rulii"
+        elementFormDefault="qualified"
+        attributeFormDefault="unqualified">
+
+    <!--
+        spring-rulii.xsd — XML namespace schema for defining Rules and RuleSets
+        using the rulii framework in a Spring application context.
+
+        Namespace: http://www.rulii.org/schema/rulii
+    -->
+
+    <!-- ==================== Scripting Configuration ==================== -->
+
+    <!--
+        <rulii:scripting defaultLanguage="spel"/>
+
+        Configures the default scripting language used when no language attribute
+        is specified on a condition or action element.
+    -->
+    <element name="scripting">
+        <complexType>
+            <attribute name="defaultLanguage" type="string" default="el"/>
+        </complexType>
+    </element>
+
+    <!-- ==================== Shared Script/Expression Types ==================== -->
+
+    <!--
+        Base type for any script-bearing element (condition or action).
+
+        The expression can be provided in two ways:
+          1. As the text body of the element:   <given>order.total > 100</given>
+          2. As a script attribute:             <given script="order.total > 100"/>
+
+        An optional language attribute overrides the default scripting language
+        configured via <rulii:scripting>.
+    -->
+
+    <!-- ==================== Condition Types ==================== -->
+
+    <!--
+        A named, optionally described script expression that evaluates to a boolean.
+        Used for pre-conditions, main conditions, and stop-conditions.
+    -->
+    <complexType name="conditionType" mixed="true">
+        <attribute name="expr" type="string"/>
+        <attribute name="language" type="string"/>
+    </complexType>
+
+    <!-- ==================== Action Types ==================== -->
+
+    <!--
+        A named, optionally described script expression that performs a side-effect.
+        Used for then-actions, otherwise-actions, initializers, and finalizers.
+    -->
+    <complexType name="actionType" mixed="true">
+        <attribute name="expr" type="string"/>
+        <attribute name="language" type="string"/>
+    </complexType>
+
+    <!-- ==================== Function Types ==================== -->
+
+    <!--
+        A named, optionally described script expression that evaluates to a value.
+        Used for default value for input params.
+    -->
+    <complexType name="functionType" mixed="true">
+        <attribute name="expr" type="string"/>
+        <attribute name="language" type="string"/>
+    </complexType>
+
+    <!-- ==================== Parameter Type ==================== -->
+
+    <!--
+        Declares a typed input parameter for a RuleSet.
+
+        Attributes:
+          name         — parameter name, used for binding resolution
+          type         — fully-qualified Java class name (e.g. java.lang.Integer)
+          required     — whether the parameter must be bound before execution (default: true)
+          description  — optional documentation
+    -->
+    <complexType name="paramType">
+        <sequence>
+            <element name="default-value" type="rulii:functionType" minOccurs="0"/>
+        </sequence>
+        <attribute name="name" type="string" use="required"/>
+        <attribute name="type" type="string" use="required"/>
+        <attribute name="required" type="boolean" default="true"/>
+        <attribute name="description" type="string"/>
+    </complexType>
+
+    <!-- ==================== Rule Reference Type ==================== -->
+
+    <!--
+        A reference to an existing Rule defined elsewhere — either by Spring bean
+        name or by fully-qualified class name.
+    -->
+    <complexType name="ruleReferenceType">
+        <attribute name="beanName" type="string"/>
+        <attribute name="className" type="string"/>
+    </complexType>
+
+    <!-- ==================== Rule Element ==================== -->
+
+    <!--
+        Defines a complete Rule inline.
+
+        Structure:
+          <rulii:rule name="DiscountRule" description="Apply discount for premium orders">
+              <pre-condition script="order != null"/>
+              <given>order.customerType == 'PREMIUM'</given>
+              <then>order.applyDiscount(0.10)</then>
+              <then name="notify">notificationService.send(order)</then>
+              <otherwise>order.applyDiscount(0)</otherwise>
+          </rulii:rule>
+
+        Attributes:
+          name        — unique rule identifier (required)
+          description — optional human-readable description
+
+        Child elements (all optional unless noted):
+          pre-condition  — guard condition evaluated before the main condition;
+                           rule is skipped entirely when this fails
+          given          — main condition; rule actions fire only when this is true
+          then           — one or more actions executed when the condition is true;
+                           multiple <then> elements are executed in declaration order
+          otherwise      — action executed when the condition is false
+    -->
+    <element name="rule">
+        <complexType>
+            <sequence>
+                <element name="pre-condition" type="rulii:conditionType" minOccurs="0"/>
+                <element name="given" type="rulii:conditionType" minOccurs="0"/>
+                <element name="then" type="rulii:actionType" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="otherwise" type="rulii:actionType" minOccurs="0"/>
+            </sequence>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="description" type="string"/>
+        </complexType>
+    </element>
+
+
+    <simpleType name="severityType">
+        <restriction base="string">
+            <enumeration value="FATAL"/>
+            <enumeration value="ERROR"/>
+            <enumeration value="WARNING"/>
+            <enumeration value="INFO"/>
+        </restriction>
+    </simpleType>
+
+
+    <element name="validationRule">
+        <complexType>
+            <sequence>
+                <element name="given" type="rulii:conditionType" minOccurs="0"/>
+            </sequence>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="description" type="string"/>
+            <attribute name="errorCode" type="string" use="required"/>
+            <attribute name="severity" type="rulii:severityType" default="ERROR"/>
+            <attribute name="errorMessage" type="string"/>
+            <attribute name="defaultMessage" type="string"/>
+        </complexType>
+    </element>
+
+    <!-- ==================== RuleSet Element ==================== -->
+
+    <!--
+        Defines a RuleSet — an ordered collection of Rules with lifecycle hooks.
+
+        Structure:
+          <rulii:ruleset name="OrderProcessingRules" description="Order validation and pricing rules">
+              <param name="order"    type="com.example.Order"/>
+              <param name="discount" type="java.lang.Double" required="false" defaultValue="0.0"/>
+
+              <pre-condition>order != null</pre-condition>
+              <initializer>auditService.begin(order)</initializer>
+
+              <rules>
+                  <rulii:rule name="MinimumOrderRule">
+                      <given>order.total >= 10</given>
+                      <otherwise>throw new ValidationException('Order total too low')</otherwise>
+                  </rulii:rule>
+                  <rule-ref beanName="discountRuleBean"/>
+                  <rule-ref className="com.example.rules.TaxRule"/>
+              </rules>
+
+              <stop-condition>order.isInvalid()</stop-condition>
+              <finalizer>auditService.end(order)</finalizer>
+          </rulii:ruleset>
+
+        Attributes:
+          name        — unique ruleset identifier (required)
+          description — optional human-readable description
+
+        Child elements (all optional unless noted):
+          param          — declares an input parameter; may appear multiple times
+          pre-condition  — guard evaluated before any rule is executed;
+                           entire ruleset is skipped when this fails
+          initializer    — action executed once before rule processing begins
+          rules          — ordered container of inline <rule> elements and
+                           <rule-ref> references to external rules
+          stop-condition — condition evaluated between rules; when true, execution halts
+                           before the remaining rules are processed
+          finalizer      — action executed once after rule processing completes
+                           (even when stopped early by the stop-condition)
+    -->
+    <element name="ruleset">
+        <complexType>
+            <sequence>
+                <element name="param" type="rulii:paramType" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="pre-condition" type="rulii:conditionType" minOccurs="0"/>
+                <element name="initializer" type="rulii:actionType" minOccurs="0"/>
+                <element name="rules" minOccurs="0">
+                    <complexType>
+                        <choice minOccurs="0" maxOccurs="unbounded">
+                            <element ref="rulii:rule"/>
+                            <element ref="rulii:validationRule"/>
+                            <element name="rule-ref" type="rulii:ruleReferenceType"/>
+                        </choice>
+                    </complexType>
+                </element>
+                <element name="stop-condition" type="rulii:conditionType" minOccurs="0"/>
+                <element name="finalizer" type="rulii:actionType" minOccurs="0"/>
+                <element name="result-extractor" type="rulii:functionType" minOccurs="0"/>
+                <element name="error-handler" type="rulii:functionType" minOccurs="0"/>
+            </sequence>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="description" type="string"/>
+            <attribute name="validating" type="boolean" default="false"/>
+        </complexType>
+    </element>
+
+</schema>

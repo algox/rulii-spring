@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:rulii="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           http://www.rulii.org/spring/spring-rulii.xsd">
+
+    <!-- Set SpEL as the default scripting language for all expressions in this file -->
+    <rulii:scripting defaultLanguage="el"/>
+
+    <!--
+        Rule using inline text for the condition and both action branches.
+        Bindings expected at runtime: age (Integer)
+    -->
+    <rulii:rule name="AgeCheckRule" description="Checks if a person is an adult">
+        <rulii:given>age >= 18</rulii:given>
+        <rulii:then>'adult'</rulii:then>
+        <rulii:otherwise>'minor'</rulii:otherwise>
+    </rulii:rule>
+
+    <!--
+        Rule using the expr attribute instead of inline text.
+        Bindings expected at runtime: value (Integer)
+    -->
+    <rulii:rule name="PositiveValueRule" description="Checks if the value is positive">
+        <rulii:given expr="value > 0"/>
+    </rulii:rule>
+
+    <!--
+        Rule with a pre-condition guard.  When age &lt;= 0 the rule is skipped entirely
+        (SKIPPED status) and the main condition is never evaluated.
+        Bindings expected at runtime: age (Integer), value (Integer)
+    -->
+    <rulii:rule name="PreConditionRule" description="Has a pre-condition guard">
+        <rulii:pre-condition>age > 0</rulii:pre-condition>
+        <rulii:given>value > 10</rulii:given>
+    </rulii:rule>
+
+    <!--
+        Rule with two then-actions (executed in declaration order).
+        Bindings expected at runtime: count (Integer)
+    -->
+    <rulii:rule name="MultiActionRule" description="Has multiple then-actions">
+        <rulii:given>count > 0</rulii:given>
+        <rulii:then>'action1'</rulii:then>
+        <rulii:then>'action2'</rulii:then>
+    </rulii:rule>
+
+    <!--
+        Rule with no given condition — the framework defaults to always-true.
+    -->
+    <rulii:rule name="NoConditionRule" description="Always passes (no condition)">
+        <rulii:then>'executed'</rulii:then>
+    </rulii:rule>
+
+    <!--
+        Rule that explicitly overrides the language on a single element.
+    -->
+    <rulii:rule name="LanguageOverrideRule" description="Tests per-element language override">
+        <rulii:given language="el">value == 42</rulii:given>
+    </rulii:rule>
+
+</beans>

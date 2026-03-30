@@ -23,6 +23,8 @@ import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.Converter;
 import org.rulii.convert.ConverterRegistry;
 import org.rulii.registry.RuleRegistry;
+import org.rulii.script.ScriptProcessorFactory;
+import org.rulii.script.ScriptProcessorManager;
 import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.spring.convert.SpringConverterAdapter;
 import org.rulii.spring.factory.SpringObjectFactory;
@@ -165,6 +167,21 @@ public class RuleConfig {
     public RuleRegistry ruleRegistry(@Autowired(required = false) ListableBeanFactory ctx) {
         if (ctx == null) LOGGER.warn("Unable to create SpringRuleRegistry. Environment does not support ListableBeanFactory.");
         return ctx != null ? new SpringRuleRegistry(ctx) : RuleRegistry.builder().build();
+    }
+
+    @Bean(BeanNames.SCRIPT_MANAGER)
+    @ConditionalOnMissingBean(ScriptProcessorManager.class)
+    public ScriptProcessorManager scriptProcessorManager(@Autowired(required = false) List<ScriptProcessorFactory> factories) {
+        ScriptProcessorManager result = new ScriptProcessorManager();
+
+        if (factories != null && !factories.isEmpty()) {
+             factories.forEach(factory -> {
+                LOGGER.info("Registering custom ScriptProcessor [" + factory.getClass() + "] Language [" + factory.getLanguageName() + "]");
+                result.register(factory);
+             });
+        }
+
+        return result;
     }
 
     /**
