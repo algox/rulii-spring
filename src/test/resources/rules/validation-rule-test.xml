@@ -1,51 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:rulii="http://www.rulii.org/schema/rulii"
+       xmlns:r="http://www.rulii.org/schema/rulii"
        xsi:schemaLocation="
            http://www.springframework.org/schema/beans
            https://www.springframework.org/schema/beans/spring-beans.xsd
            http://www.rulii.org/schema/rulii
            http://www.rulii.org/spring/spring-rulii.xsd">
 
-    <rulii:scripting defaultLanguage="el"/>
+    <r:scripting defaultLanguage="el"/>
 
     <!--
         Validation rule — condition passes when age is non-negative.
         Bindings expected at runtime: age (Integer)
     -->
-    <rulii:validationRule name="MinAgeRule"
+    <r:validationRule name="MinAgeRule"
                           description="Age must be zero or greater"
                           errorCode="INVALID_AGE"
                           severity="ERROR"
                           errorMessage="Age must be >= 0"
                           defaultMessage="Invalid age value">
-        <rulii:given>age >= 0</rulii:given>
-    </rulii:validationRule>
+        <r:given>#ctx.age >= 0</r:given>
+    </r:validationRule>
 
     <!--
         Validation rule — condition passes when name is non-null.
         Bindings expected at runtime: name (String or null)
     -->
-    <rulii:validationRule name="RequiredNameRule"
+    <r:validationRule name="RequiredNameRule"
                           description="Name is a required field"
                           errorCode="NAME_REQUIRED"
                           severity="FATAL"
                           errorMessage="Name is required"
                           defaultMessage="Name must be provided">
-        <rulii:given>name != null</rulii:given>
-    </rulii:validationRule>
+        <r:given>#ctx.name != null</r:given>
+    </r:validationRule>
 
     <!--
         Validation rule — condition passes when age does not exceed maximum.
         Uses the expr attribute form and WARNING severity.
         Bindings expected at runtime: age (Integer)
     -->
-    <rulii:validationRule name="MaxAgeRule"
+    <r:validationRule name="MaxAgeRule"
                           description="Age must not exceed 150"
                           errorCode="MAX_AGE_EXCEEDED"
                           severity="WARNING">
-        <rulii:given expr="age &lt;= 150"/>
-    </rulii:validationRule>
+        <r:given expr="#ctx.age &lt;= 150"/>
+    </r:validationRule>
 
 </beans>

@@ -130,7 +130,7 @@ public class SpelScriptProcessor implements ScriptProcessor {
     protected EvaluationContext buildContext(RuleContext ruleContext) {
         Assert.notNull(ruleContext, "ruleContext cannot be null.");
 
-        StandardEvaluationContext result = new StandardEvaluationContext(ruleContext.getBindings());
+        StandardEvaluationContext result = new StandardEvaluationContext();
         result.setPropertyAccessors(PROPERTY_ACCESSORS);
 
         Map<String, Object> vars = new HashMap<>();

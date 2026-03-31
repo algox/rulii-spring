@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:rulii="http://www.rulii.org/schema/rulii"
+       xmlns:r="http://www.rulii.org/schema/rulii"
        xsi:schemaLocation="
            http://www.springframework.org/schema/beans
            https://www.springframework.org/schema/beans/spring-beans.xsd
            http://www.rulii.org/schema/rulii
            http://www.rulii.org/spring/spring-rulii.xsd">
 
-    <rulii:scripting defaultLanguage="el"/>
+    <r:scripting defaultLanguage="el"/>
 
     <!-- ======================================================
          Standalone rules used as <rule-ref beanName="..."/> targets
     ====================================================== -->
 
-    <rulii:rule name="AdultCheckRule" description="Passes when age >= 18">
-        <rulii:given>age >= 18</rulii:given>
-    </rulii:rule>
+    <r:rule name="AdultCheckRule" description="Passes when age >= 18">
+        <r:given>#ctx.age >= 18</r:given>
+    </r:rule>
 
-    <rulii:rule name="PositiveCountRule" description="Passes when count > 0">
-        <rulii:given>count > 0</rulii:given>
-    </rulii:rule>
+    <r:rule name="PositiveCountRule" description="Passes when count > 0">
+        <r:given>#ctx.count > 0</r:given>
+    </r:rule>
 
     <!-- ======================================================
          Basic ruleset — references two existing rule beans.
     ====================================================== -->
 
-    <rulii:ruleset name="BasicRuleSet" description="Wraps two standalone rules">
-        <rulii:rules>
-            <rulii:rule-ref beanName="AdultCheckRule"/>
-            <rulii:rule-ref beanName="PositiveCountRule"/>
-        </rulii:rules>
-    </rulii:ruleset>
+    <r:ruleset name="BasicRuleSet" description="Wraps two standalone rules">
+        <r:rules>
+            <r:rule-ref beanName="AdultCheckRule"/>
+            <r:rule-ref beanName="PositiveCountRule"/>
+        </r:rules>
+    </r:ruleset>
 
     <!-- ======================================================
          Ruleset with declared input parameters.
@@ -39,15 +39,15 @@
          - maxItems: optional Integer (no default value expression)
     ====================================================== -->
 
-    <rulii:ruleset name="ParameterizedRuleSet" description="Demonstrates input parameter declarations">
-        <rulii:param name="order"    type="java.lang.String"/>
-        <rulii:param name="maxItems" type="java.lang.Integer" required="false"/>
-        <rulii:rules>
-            <rulii:rule name="OrderNotEmptyRule">
-                <rulii:given>order.length() > 0</rulii:given>
-            </rulii:rule>
-        </rulii:rules>
-    </rulii:ruleset>
+    <r:ruleset name="ParameterizedRuleSet" description="Demonstrates input parameter declarations">
+        <r:param name="order" type="java.lang.String"/>
+        <r:param name="maxItems" type="java.lang.Integer" required="false"/>
+        <r:rules>
+            <r:rule name="OrderNotEmptyRule">
+                <r:given>#ctx.order.length() > 0</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
 
     <!-- ======================================================
          Ruleset that exercises all lifecycle hooks:
@@ -55,16 +55,16 @@
          Bindings expected: value (Integer), count (Integer)
     ====================================================== -->
 
-    <rulii:ruleset name="LifecycleRuleSet" description="Exercises all lifecycle hooks">
-        <rulii:pre-condition>value > 0</rulii:pre-condition>
-        <rulii:initializer>'init'</rulii:initializer>
-        <rulii:rules>
-            <rulii:rule name="LifecycleInlineRule">
-                <rulii:given>value > 5</rulii:given>
-            </rulii:rule>
-        </rulii:rules>
-        <rulii:stop-condition>count > 100</rulii:stop-condition>
-        <rulii:finalizer>'fin'</rulii:finalizer>
-    </rulii:ruleset>
+    <r:ruleset name="LifecycleRuleSet" description="Exercises all lifecycle hooks">
+        <r:pre-condition>#ctx.value > 0</r:pre-condition>
+        <r:initializer>'init'</r:initializer>
+        <r:rules>
+            <r:rule name="LifecycleInlineRule">
+                <r:given>#ctx.value > 5</r:given>
+            </r:rule>
+        </r:rules>
+        <r:stop-condition>#ctx.count > 100</r:stop-condition>
+        <r:finalizer>'fin'</r:finalizer>
+    </r:ruleset>
 
 </beans>

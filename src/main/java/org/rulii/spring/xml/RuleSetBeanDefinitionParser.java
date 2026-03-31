@@ -83,6 +83,7 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
         builder.addPropertyValue("name", element.getAttribute("name"));
         builder.addPropertyValue("description", element.getAttribute("description"));
         builder.addPropertyValue("defaultLanguage", handler.getDefaultLanguage());
+        builder.addPropertyValue("validating", element.getAttribute("validating"));
 
         // <param> elements
         List<Element> params = DomUtils.getChildElementsByTagName(element, "param");

@@ -61,13 +61,7 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
         if (condition == null) throw new UnrulyException("ValidationRule '" + name + "' must have a <given> condition.");
 
         final String ruleName = this.name;
-        ValidationRuleBuilder builder = new ValidationRuleBuilder(ruleName, buildCondition(condition)) {
-            @Override
-            protected RuleDefinition buildRuleDefinition() {
-                name(ruleName);  // restore custom name overwritten by load()
-                return super.buildRuleDefinition();
-            }
-        };
+        ValidationRuleBuilder builder = new ValidationRuleBuilder(ruleName, buildCondition(condition));
 
         builder.errorCode(errorCode);
         if (StringUtils.hasText(description)) builder.description(description);

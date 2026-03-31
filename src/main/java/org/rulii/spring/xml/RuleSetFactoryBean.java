@@ -50,6 +50,7 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     private String name;
     private String description;
     private String defaultLanguage;
+    private boolean validating = false;
 
     private List<InputParameterDefinition> params = new ArrayList<>();
     private ScriptExpression preCondition;
@@ -78,6 +79,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
                 builder.param(inputParameter.getName(), type, inputParameter.isRequired());
             }
         }
+
+        if (validating) builder.validating();
 
         if (preCondition != null) builder.preCondition(buildCondition(preCondition));
 
@@ -133,6 +136,10 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     public void setDefaultLanguage(String defaultLanguage) {
         this.defaultLanguage = defaultLanguage;
+    }
+
+    public void setValidating(boolean validating) {
+        this.validating = validating;
     }
 
     public void setParams(List<InputParameterDefinition> params) {
