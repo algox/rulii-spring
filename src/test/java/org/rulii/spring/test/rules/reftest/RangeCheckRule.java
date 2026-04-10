@@ -18,6 +18,7 @@
 package org.rulii.spring.test.rules.reftest;
 
 import org.rulii.annotation.Given;
+import org.springframework.util.Assert;
 
 /**
  * Test rule that passes when {@code value} is within [min, max].
@@ -32,6 +33,8 @@ public class RangeCheckRule {
     private final int max;
 
     public RangeCheckRule(int min, int max) {
+        super();
+        Assert.isTrue(min <= max, "min must be <= max.");
         this.min = min;
         this.max = max;
     }

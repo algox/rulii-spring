@@ -31,7 +31,9 @@ public class ThresholdRule {
 
     private int threshold;
 
-    public ThresholdRule() {}
+    public ThresholdRule() {
+        super();
+    }
 
     @Given
     public boolean when(int value) {

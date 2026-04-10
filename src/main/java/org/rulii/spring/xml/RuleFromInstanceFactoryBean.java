@@ -17,6 +17,7 @@
  */
 package org.rulii.spring.xml;
 
+import org.rulii.model.UnrulyException;
 import org.rulii.rule.Rule;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -42,7 +43,7 @@ class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean
 
     @Override
     public void afterPropertiesSet() {
-        if (ruleInstance == null) throw new IllegalStateException("ruleInstance must not be null");
+        if (ruleInstance == null) throw new UnrulyException("ruleInstance must not be null.");
         rule = Rule.builder().build(ruleInstance);
     }
 
@@ -51,12 +52,8 @@ class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean
     }
 
     @Override
-    public Rule getObject() {
-        return rule;
-    }
+    public Rule getObject() { return rule; }
 
     @Override
-    public Class<?> getObjectType() {
-        return Rule.class;
-    }
+    public Class<?> getObjectType() { return Rule.class; }
 }

@@ -95,9 +95,9 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDef
         String severity = element.getAttribute("severity");
         String errorMessage = element.getAttribute("errorMessage");
 
-        if (StringUtils.hasText(description)) builder.addPropertyValue("description",  description);
-        if (StringUtils.hasText(errorCode)) builder.addPropertyValue("errorCode",    errorCode);
-        if (StringUtils.hasText(severity)) builder.addPropertyValue("severity",     severity);
+        if (StringUtils.hasText(description)) builder.addPropertyValue("description", description);
+        if (StringUtils.hasText(errorCode)) builder.addPropertyValue("errorCode", errorCode);
+        if (StringUtils.hasText(severity)) builder.addPropertyValue("severity", severity);
         if (StringUtils.hasText(errorMessage)) builder.addPropertyValue("errorMessage", errorMessage);
 
         parseTypeSpecificAttributes(type, element, builder);

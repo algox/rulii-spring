@@ -92,7 +92,7 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
         vb.name(name).description(description);
 
         if (StringUtils.hasText(errorCode)) vb.errorCode(errorCode);
-        if (StringUtils.hasText(severity))  vb.severity(Severity.valueOf(severity.toUpperCase()));
+        if (StringUtils.hasText(severity)) vb.severity(Severity.valueOf(severity.toUpperCase()));
         if (StringUtils.hasText(errorMessage)) vb.message(errorMessage);
 
         rule = vb.build();

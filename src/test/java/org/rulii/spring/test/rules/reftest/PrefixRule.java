@@ -18,6 +18,7 @@
 package org.rulii.spring.test.rules.reftest;
 
 import org.rulii.annotation.Given;
+import org.springframework.util.Assert;
 
 /**
  * Test rule that passes when {@code text} starts with the configured prefix.
@@ -31,6 +32,8 @@ public class PrefixRule {
     private final String prefix;
 
     public PrefixRule(String prefix) {
+        super();
+        Assert.notNull(prefix, "prefix cannot be null.");
         this.prefix = prefix;
     }
 

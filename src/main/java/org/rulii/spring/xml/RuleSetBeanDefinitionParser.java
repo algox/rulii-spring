@@ -225,8 +225,8 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
         String defaultMessage = el.getAttribute("defaultMessage");
 
         rb.addPropertyValue("errorCode", errorCode);
-        if (StringUtils.hasText(severity)) rb.addPropertyValue("severity",       severity);
-        if (StringUtils.hasText(errorMessage)) rb.addPropertyValue("errorMessage",   errorMessage);
+        if (StringUtils.hasText(severity)) rb.addPropertyValue("severity", severity);
+        if (StringUtils.hasText(errorMessage)) rb.addPropertyValue("errorMessage", errorMessage);
         if (StringUtils.hasText(defaultMessage)) rb.addPropertyValue("defaultMessage", defaultMessage);
 
         Element condition = DomUtils.getChildElementByTagName(el, "given");
