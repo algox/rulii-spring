@@ -17,9 +17,8 @@
  */
 package org.rulii.spring.xml;
 
-import org.rulii.spring.config.BeanNames;
-import org.rulii.spring.config.RuleBeanBuilder;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
+import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
@@ -45,7 +44,7 @@ import java.util.List;
  *   <li>{@code <pre-condition>} — guard evaluated before any rule runs</li>
  *   <li>{@code <initializer>} — action executed once before rule processing</li>
  *   <li>{@code <rules>} — ordered container of inline {@code <rule>},
- *       {@code <validationRule>}, and {@code <rule-ref>} entries</li>
+ *       {@code <validationRule>}, {@code <bean-ref>}, and {@code <class-ref>} entries</li>
  *   <li>{@code <stop-condition>} — condition evaluated between rules to halt execution early</li>
  *   <li>{@code <finalizer>} — action executed once after rule processing completes</li>
  * </ul>
@@ -154,8 +153,10 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
                 refs.add(registerInlineRule(child, parserContext));
             } else if ("validationRule".equals(localName)) {
                 refs.add(registerInlineValidationRule(child, parserContext));
-            } else if ("rule-ref".equals(localName)) {
-                RuntimeBeanReference ref = resolveRuleRef(child, parserContext);
+            } else if ("bean-ref".equals(localName)) {
+                refs.add(new RuntimeBeanReference(child.getAttribute("name")));
+            } else if ("class-ref".equals(localName)) {
+                RuntimeBeanReference ref = registerClassRef(child, parserContext);
                 if (ref != null) refs.add(ref);
             } else {
                 // Any other element is treated as an inline predefined validation rule
@@ -235,33 +236,61 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
     }
 
     /**
-     * Resolves a {@code <rule-ref>} element to a {@link RuntimeBeanReference}.
-     * Supports {@code beanName} (direct reference) and {@code className} (class-based rule auto-registration).
+     * Parses a {@code <class-ref>} element, registers the rule class as a Spring bean
+     * (with any declared constructor args and property injections), wraps it in a
+     * {@link RuleFromInstanceFactoryBean}, and returns a reference to the wrapper bean.
+     *
+     * <p>Spring handles all type conversion (via {@link TypedStringValue}) and bean wiring
+     * (via constructor-arg / property references), so no custom reflection code is needed here.
      */
-    private RuntimeBeanReference resolveRuleRef(Element el, ParserContext parserContext) {
-        String beanName  = el.getAttribute("beanName");
-        String className = el.getAttribute("className");
+    private RuntimeBeanReference registerClassRef(Element el, ParserContext parserContext) {
+        String className = el.getAttribute("class");
 
-        if (StringUtils.hasText(beanName)) {
-            return new RuntimeBeanReference(beanName);
-        }
+        try {
+            Class<?> ruleClass = ClassUtils.forName(className, Thread.currentThread().getContextClassLoader());
 
-        if (StringUtils.hasText(className)) {
-            try {
-                Class<?> ruleClass = ClassUtils.forName(className, Thread.currentThread().getContextClassLoader());
-                BeanDefinitionBuilder rb = BeanDefinitionBuilder.genericBeanDefinition(RuleBeanBuilder.class);
-                rb.addConstructorArgValue(ruleClass);
-                rb.addConstructorArgReference(BeanNames.OBJECT_FACTORY);
-                rb.setFactoryMethod("build");
-                return registerAndRef(rb.getBeanDefinition(), null, parserContext);
-            } catch (ClassNotFoundException e) {
-                parserContext.getReaderContext().error("Cannot find rule class '" + className + "'", el);
+            // 1. Build a bean definition for the rule class itself.
+            BeanDefinitionBuilder instanceBuilder = BeanDefinitionBuilder.genericBeanDefinition(ruleClass);
+
+            for (Element arg : DomUtils.getChildElementsByTagName(el, "arg")) {
+                String ref   = arg.getAttribute("ref");
+                String value = arg.getAttribute("value");
+                String type  = arg.getAttribute("type");
+                if (StringUtils.hasText(ref)) {
+                    instanceBuilder.addConstructorArgReference(ref);
+                } else {
+                    instanceBuilder.addConstructorArgValue(
+                            StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
+                }
             }
-        } else {
-            parserContext.getReaderContext().error("<rule-ref> must specify either 'beanName' or 'className'", el);
-        }
 
-        return null;
+            for (Element prop : DomUtils.getChildElementsByTagName(el, "property")) {
+                String name  = prop.getAttribute("name");
+                String ref   = prop.getAttribute("ref");
+                String value = prop.getAttribute("value");
+                String type  = prop.getAttribute("type");
+                if (StringUtils.hasText(ref)) {
+                    instanceBuilder.addPropertyReference(name, ref);
+                } else {
+                    instanceBuilder.addPropertyValue(name,
+                            StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
+                }
+            }
+
+            String instanceBeanName = parserContext.getReaderContext()
+                    .generateBeanName(instanceBuilder.getBeanDefinition());
+            parserContext.getRegistry().registerBeanDefinition(instanceBeanName, instanceBuilder.getBeanDefinition());
+
+            // 2. Wrap the instance in a RuleFromInstanceFactoryBean.
+            BeanDefinitionBuilder wrapperBuilder =
+                    BeanDefinitionBuilder.genericBeanDefinition(RuleFromInstanceFactoryBean.class);
+            wrapperBuilder.addPropertyReference("ruleInstance", instanceBeanName);
+            return registerAndRef(wrapperBuilder.getBeanDefinition(), null, parserContext);
+
+        } catch (ClassNotFoundException e) {
+            parserContext.getReaderContext().error("Cannot find rule class '" + className + "'", el);
+            return null;
+        }
     }
 
     /**

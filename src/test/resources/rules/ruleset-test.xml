@@ -11,7 +11,7 @@
     <r:scripting defaultLanguage="el"/>
 
     <!-- ======================================================
-         Standalone rules used as <rule-ref beanName="..."/> targets
+         Standalone rules used as <bean-ref name="..."/> targets
     ====================================================== -->
 
     <r:rule name="AdultCheckRule" description="Passes when age >= 18">
@@ -28,8 +28,8 @@
 
     <r:ruleset name="BasicRuleSet" description="Wraps two standalone rules">
         <r:rules>
-            <r:rule-ref beanName="AdultCheckRule"/>
-            <r:rule-ref beanName="PositiveCountRule"/>
+            <r:bean-ref name="AdultCheckRule"/>
+            <r:bean-ref name="PositiveCountRule"/>
         </r:rules>
     </r:ruleset>
 

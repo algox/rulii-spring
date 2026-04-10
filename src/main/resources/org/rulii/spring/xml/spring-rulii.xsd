@@ -94,15 +94,66 @@
         <attribute name="description" type="string"/>
     </complexType>
 
-    <!-- ==================== Rule Reference Type ==================== -->
+    <!-- ==================== Rule Reference Types ==================== -->
 
     <!--
-        A reference to an existing Rule defined elsewhere — either by Spring bean
-        name or by fully-qualified class name.
+        References an existing Spring-managed Rule bean by name.
+
+          <rulii:bean-ref name="myExistingRule"/>
     -->
-    <complexType name="ruleReferenceType">
-        <attribute name="beanName" type="string"/>
-        <attribute name="className" type="string"/>
+    <complexType name="beanReferenceType">
+        <attribute name="name" type="string" use="required"/>
+    </complexType>
+
+    <!--
+        Instantiates a Rule class, with optional constructor arguments and
+        property injection.
+
+          <rulii:class-ref class="com.example.MinAgeRule">
+              <rulii:arg value="18" type="int"/>
+              <rulii:property name="errorMessage" value="Too young"/>
+          </rulii:class-ref>
+    -->
+    <complexType name="classReferenceType">
+        <sequence>
+            <element name="arg" type="rulii:constructorArgType" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="property" type="rulii:propertyType" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="class" type="string" use="required"/>
+    </complexType>
+
+    <!--
+        A single constructor argument for a <class-ref>.
+
+        Supply exactly one of:
+          value — a literal string value; use type for non-String parameters
+          ref   — the name of a Spring bean to inject
+
+        Attributes:
+          value — literal value
+          ref   — bean name reference (mutually exclusive with value)
+          type  — fully-qualified Java type for value conversion (e.g. int, java.math.BigDecimal)
+    -->
+    <complexType name="constructorArgType">
+        <attribute name="value" type="string"/>
+        <attribute name="ref" type="string"/>
+        <attribute name="type" type="string"/>
+    </complexType>
+
+    <!--
+        A single property to inject via setter on a <class-ref>.
+
+        Attributes:
+          name  — the property name (required)
+          value — literal value
+          ref   — bean name reference (mutually exclusive with value)
+          type  — fully-qualified Java type for value conversion
+    -->
+    <complexType name="propertyType">
+        <attribute name="name" type="string" use="required"/>
+        <attribute name="value" type="string"/>
+        <attribute name="ref" type="string"/>
+        <attribute name="type" type="string"/>
     </complexType>
 
     <!-- ==================== Rule Element ==================== -->
@@ -640,7 +691,8 @@
                             <element ref="rulii:startsWith"/>
                             <element ref="rulii:endsWith"/>
                             <element ref="rulii:in"/>
-                            <element name="rule-ref" type="rulii:ruleReferenceType"/>
+                            <element name="bean-ref"  type="rulii:beanReferenceType"/>
+                            <element name="class-ref" type="rulii:classReferenceType"/>
                         </choice>
                     </complexType>
                 </element>
