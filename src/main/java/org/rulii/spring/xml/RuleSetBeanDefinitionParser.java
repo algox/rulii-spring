@@ -157,9 +157,24 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
             } else if ("rule-ref".equals(localName)) {
                 RuntimeBeanReference ref = resolveRuleRef(child, parserContext);
                 if (ref != null) refs.add(ref);
+            } else {
+                // Any other element is treated as an inline predefined validation rule
+                // (notNull, min, pattern, in, etc.) — delegate to the shared populate helper.
+                refs.add(registerInlinePredefinedValidationRule(child, parserContext));
             }
         }
         return refs;
+    }
+
+    /**
+     * Parses an inline predefined validation rule element (e.g. {@code <rulii:notNull>},
+     * {@code <rulii:min>}), registers a {@link PredefinedValidationRuleFactoryBean} sibling
+     * bean definition, and returns a {@link RuntimeBeanReference} to it.
+     */
+    private RuntimeBeanReference registerInlinePredefinedValidationRule(Element el, ParserContext parserContext) {
+        BeanDefinitionBuilder rb = BeanDefinitionBuilder.genericBeanDefinition(PredefinedValidationRuleFactoryBean.class);
+        PredefinedValidationRuleBeanDefinitionParser.populate(el, rb, handler.getDefaultLanguage());
+        return registerAndRef(rb.getBeanDefinition(), el.getAttribute("name"), parserContext);
     }
 
     /**

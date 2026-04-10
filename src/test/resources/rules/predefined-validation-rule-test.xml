@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           http://www.rulii.org/spring/spring-rulii.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- ======================================================
+         No-param rules — null / blank / string checks
+         Runtime bindings: value (Object), text (String), flag (Boolean)
+    ====================================================== -->
+
+    <r:notNull name="NotNullRule" binding="value"/>
+
+    <r:notBlank name="NotBlankRule" binding="text"/>
+
+    <r:isNull name="IsNullRule" binding="value"/>
+
+    <r:blank name="BlankRule" binding="text"/>
+
+    <!-- ======================================================
+         No-param rules — string format checks
+         Runtime bindings: email (String), url (String), text (String)
+    ====================================================== -->
+
+    <r:email name="EmailRule" binding="email"/>
+
+    <r:url name="UrlRule" binding="url"/>
+
+    <r:lowerCase name="LowerCaseRule" binding="text"/>
+
+    <r:upperCase name="UpperCaseRule" binding="text"/>
+
+    <r:alpha name="AlphaRule" binding="text"/>
+
+    <r:numeric name="NumericRule" binding="text"/>
+
+    <!-- ======================================================
+         No-param rules — boolean assertions
+         Runtime bindings: flag (Boolean)
+    ====================================================== -->
+
+    <r:assertTrue name="AssertTrueRule" binding="flag"/>
+
+    <r:assertFalse name="AssertFalseRule" binding="flag"/>
+
+    <!-- ======================================================
+         No-param rules — sign checks
+         Runtime bindings: number (Integer or Long)
+    ====================================================== -->
+
+    <r:positive name="PositiveRule" binding="number"/>
+
+    <r:positiveOrZero name="PositiveOrZeroRule" binding="number"/>
+
+    <r:negative name="NegativeRule" binding="number"/>
+
+    <r:negativeOrZero name="NegativeOrZeroRule" binding="number"/>
+
+    <!-- ======================================================
+         Numeric bounds — integer
+         Runtime bindings: age (Integer)
+    ====================================================== -->
+
+    <r:min name="MinAgeRule" binding="age" min="18"/>
+
+    <r:max name="MaxAgeRule" binding="age" max="100"/>
+
+    <!-- ======================================================
+         Numeric bounds — decimal
+         Runtime bindings: score (BigDecimal)
+    ====================================================== -->
+
+    <r:decimalMin name="DecimalMinScoreRule" binding="score" min="0.0"/>
+
+    <r:decimalMax name="DecimalMaxScoreRule" binding="score" max="10.0"/>
+
+    <!-- ======================================================
+         Size and digits
+         Runtime bindings: name (String), price (String or BigDecimal)
+    ====================================================== -->
+
+    <r:size name="NameSizeRule" binding="name" min="2" max="50"/>
+
+    <r:digits name="PriceDigitsRule" binding="price" maxIntegerDigits="5" maxFractionDigits="2"/>
+
+    <!-- ======================================================
+         Pattern matching
+         Runtime bindings: code (String)
+    ====================================================== -->
+
+    <!--  Expects exactly two uppercase letters, a hyphen, then four digits -->
+    <r:pattern name="CodePatternRule"
+               binding="code"
+               pattern="[A-Z]{2}-\d{4}"/>
+
+    <!--  Pattern is lowercase letters, but matching is case-insensitive -->
+    <r:pattern name="CaseInsensitivePatternRule"
+               binding="code"
+               pattern="[a-z]+"
+               caseSensitive="false"/>
+
+    <!-- ======================================================
+         Equality checks
+         Runtime bindings: status (String)
+    ====================================================== -->
+
+    <r:assertEquals    name="StatusEqualsActiveRule"  binding="status" value="ACTIVE"/>
+
+    <r:assertNotEquals name="StatusNotDeletedRule"    binding="status" value="DELETED"/>
+
+    <!-- ======================================================
+         Multi-value — in, startsWith, endsWith
+         Runtime bindings: status (String), title (String), email (String)
+    ====================================================== -->
+
+    <r:in name="StatusInRule" binding="status">
+        <r:item>ACTIVE</r:item>
+        <r:item>INACTIVE</r:item>
+        <r:item>PENDING</r:item>
+    </r:in>
+
+    <r:startsWith name="TitleStartsWithRule" binding="title">
+        <r:prefix>Mr.</r:prefix>
+        <r:prefix>Dr.</r:prefix>
+        <r:prefix>Prof.</r:prefix>
+    </r:startsWith>
+
+    <r:endsWith name="EmailEndsWithRule" binding="email">
+        <r:suffix>.com</r:suffix>
+        <r:suffix>.org</r:suffix>
+    </r:endsWith>
+
+    <!-- ======================================================
+         Script expression form (expr attribute instead of binding)
+         Tests that the value can also be sourced from a script.
+         Runtime bindings: age (Integer)
+    ====================================================== -->
+
+    <r:min name="MinAgeByExprRule" expr="#ctx.age" min="0"/>
+
+    <!-- ======================================================
+         Override form — errorCode, severity, and errorMessage overridden.
+         Runtime bindings: value (Object)
+    ====================================================== -->
+
+    <r:notNull name="OverriddenNotNullRule"
+               binding="value"
+               severity="FATAL"
+               errorCode="REQUIRED_FIELD"
+               errorMessage="This field is required and must not be null"/>
+
+    <!-- ======================================================
+         Ruleset integrating predefined validation rules.
+         Demonstrates that predefined rules can be embedded inside
+         a <rulii:ruleset> alongside <rule-ref> elements.
+         Runtime bindings: name (String), age (Integer), status (String)
+    ====================================================== -->
+
+    <r:ruleset name="PersonValidationRuleSet" description="Validates a person record" validating="true">
+        <r:param name="name"   type="java.lang.String"/>
+        <r:param name="age"    type="java.lang.Integer"/>
+        <r:param name="status" type="java.lang.String"/>
+        <r:rules>
+            <r:notNull  name="PersonNameNotNull"   binding="name"/>
+            <r:notBlank name="PersonNameNotBlank"  binding="name"/>
+            <r:size     name="PersonNameSize"      binding="name"   min="2" max="100"/>
+            <r:min      name="PersonAgeMin"        binding="age"    min="0"/>
+            <r:max      name="PersonAgeMax"        binding="age"    max="150"/>
+            <r:in       name="PersonStatusValid"   binding="status">
+                <r:item>ACTIVE</r:item>
+                <r:item>INACTIVE</r:item>
+            </r:in>
+        </r:rules>
+    </r:ruleset>
+
+</beans>

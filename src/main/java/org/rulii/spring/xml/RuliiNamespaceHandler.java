@@ -20,30 +20,7 @@ package org.rulii.spring.xml;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 import org.springframework.util.Assert;
 
-/**
- * Spring XML namespace handler for the {@code http://www.rulii.org/schema/rulii} namespace.
- *
- * <p>Registers a {@link org.springframework.beans.factory.xml.BeanDefinitionParser} for each
- * top-level element defined in {@code spring-rulii.xsd}:
- * <ul>
- *   <li>{@code <rulii:scripting>} — sets the default scripting language for subsequent elements</li>
- *   <li>{@code <rulii:rule>} — defines an inline rule backed by script conditions and actions</li>
- *   <li>{@code <rulii:validationRule>} — defines a validation rule with error metadata</li>
- *   <li>{@code <rulii:ruleset>} — defines an ordered collection of rules with lifecycle hooks</li>
- * </ul>
- *
- * <p>The {@link #defaultLanguage} field is mutated by {@link ScriptingBeanDefinitionParser} when a
- * {@code <rulii:scripting>} element is encountered and is propagated to all subsequent parsers.
- * Place {@code <rulii:scripting>} before rule/ruleset definitions to ensure the default takes effect.
- *
- * <p>Registered in {@code META-INF/spring.handlers} as:
- * <pre>
- * http\://www.rulii.org/schema/rulii=org.rulii.spring.xml.ns.RuliiNamespaceHandler
- * </pre>
- *
- * @author Max Arulananthan
- * @since 1.0
- */
+
 public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
 
     /** Default scripting language used when an expression element carries no {@code language} attribute. */
@@ -55,6 +32,57 @@ public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
         registerBeanDefinitionParser("rule",           new RuleBeanDefinitionParser(this));
         registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser(this));
         registerBeanDefinitionParser("ruleset",        new RuleSetBeanDefinitionParser(this));
+
+        PredefinedValidationRuleBeanDefinitionParser predefined = new PredefinedValidationRuleBeanDefinitionParser(this);
+
+        // No extra parameters
+        registerBeanDefinitionParser("notNull",         predefined);
+        registerBeanDefinitionParser("notBlank",        predefined);
+        registerBeanDefinitionParser("notEmpty",        predefined);
+        registerBeanDefinitionParser("isNull",          predefined);
+        registerBeanDefinitionParser("blank",           predefined);
+        registerBeanDefinitionParser("alpha",           predefined);
+        registerBeanDefinitionParser("alphaNumeric",    predefined);
+        registerBeanDefinitionParser("ascii",           predefined);
+        registerBeanDefinitionParser("decimal",         predefined);
+        registerBeanDefinitionParser("numeric",         predefined);
+        registerBeanDefinitionParser("email",           predefined);
+        registerBeanDefinitionParser("url",             predefined);
+        registerBeanDefinitionParser("lowerCase",       predefined);
+        registerBeanDefinitionParser("upperCase",       predefined);
+        registerBeanDefinitionParser("assertFalse",     predefined);
+        registerBeanDefinitionParser("assertTrue",      predefined);
+        registerBeanDefinitionParser("positive",        predefined);
+        registerBeanDefinitionParser("positiveOrZero",  predefined);
+        registerBeanDefinitionParser("negative",        predefined);
+        registerBeanDefinitionParser("negativeOrZero",  predefined);
+        registerBeanDefinitionParser("future",          predefined);
+        registerBeanDefinitionParser("futureOrPresent", predefined);
+        registerBeanDefinitionParser("past",            predefined);
+        registerBeanDefinitionParser("pastOrPresent",   predefined);
+        registerBeanDefinitionParser("fileExists",      predefined);
+
+        // Numeric bounds
+        registerBeanDefinitionParser("min",             predefined);
+        registerBeanDefinitionParser("max",             predefined);
+        registerBeanDefinitionParser("decimalMin",      predefined);
+        registerBeanDefinitionParser("decimalMax",      predefined);
+
+        // Size / digits
+        registerBeanDefinitionParser("size",            predefined);
+        registerBeanDefinitionParser("digits",          predefined);
+
+        // Pattern
+        registerBeanDefinitionParser("pattern",         predefined);
+
+        // Equality
+        registerBeanDefinitionParser("assertEquals",    predefined);
+        registerBeanDefinitionParser("assertNotEquals", predefined);
+
+        // Multi-value
+        registerBeanDefinitionParser("startsWith",      predefined);
+        registerBeanDefinitionParser("endsWith",        predefined);
+        registerBeanDefinitionParser("in",              predefined);
     }
 
     public String getDefaultLanguage() {

@@ -169,6 +169,387 @@
         </complexType>
     </element>
 
+    <!-- ==================== Predefined Validation Rules — Base Type ==================== -->
+
+    <!--
+        Abstract base type shared by all predefined validation rule elements.
+
+        The value to validate is supplied via exactly one of:
+          binding  — name of a binding resolved from the RuleContext at execution time
+                     (shorthand for #ctx.bindingName in the default scripting language)
+          expr     — script expression returning the value (e.g. expr="#ctx.order.total")
+          (body)   — script expression as the element text body
+
+        An optional language attribute overrides the default scripting language
+        configured via <rulii:scripting>.
+
+        All override attributes are optional — each rule supplies its own defaults:
+          errorCode, severity, errorMessage, description
+    -->
+    <complexType name="predefinedValidationRuleType" abstract="true">
+        <attribute name="name" type="string" use="required"/>
+        <attribute name="binding" type="string"/>
+        <attribute name="expr" type="string"/>
+        <attribute name="language" type="string"/>
+        <attribute name="description" type="string"/>
+        <attribute name="errorCode" type="string"/>
+        <attribute name="severity" type="rulii:severityType"/>
+        <attribute name="errorMessage" type="string"/>
+    </complexType>
+
+
+    <!-- ==================== Predefined Validation Rules — No Extra Parameters ==================== -->
+
+    <element name="notNull">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="notBlank">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="notEmpty">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="isNull">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="blank">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="alpha">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="alphaNumeric">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="ascii">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="decimal">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="numeric">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="email">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="url">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="lowerCase">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="upperCase">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="assertFalse">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="assertTrue">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="positive">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="positiveOrZero">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="negative">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="negativeOrZero">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="future">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="futureOrPresent">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="past">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="pastOrPresent">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="fileExists">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Numeric Bounds ==================== -->
+
+    <element name="min">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="min" type="long" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="max">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="max" type="long" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="decimalMin">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="min" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="decimalMax">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="max" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Size / Digits ==================== -->
+
+    <element name="size">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="min" type="int" use="required"/>
+                    <attribute name="max" type="int" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="digits">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="maxIntegerDigits" type="int" use="required"/>
+                    <attribute name="maxFractionDigits" type="int" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Pattern ==================== -->
+
+    <element name="pattern">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="pattern" type="string" use="required"/>
+                    <attribute name="caseSensitive" type="boolean" default="true"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Equality ==================== -->
+
+    <element name="assertEquals">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="value" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="assertNotEquals">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="value" type="string" use="required"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Multi-value ==================== -->
+
+    <!--
+        startsWith, endsWith, and in require one or more child string elements.
+        minOccurs="1" enforces that at least one entry is present at schema level.
+        The value to validate is still supplied via binding or expr on the parent element.
+    -->
+    <element name="startsWith">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <sequence>
+                        <element name="prefix" type="string" minOccurs="1" maxOccurs="unbounded"/>
+                    </sequence>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="endsWith">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <sequence>
+                        <element name="suffix" type="string" minOccurs="1" maxOccurs="unbounded"/>
+                    </sequence>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="in">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <sequence>
+                        <element name="item" type="string" minOccurs="1" maxOccurs="unbounded"/>
+                    </sequence>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
     <!-- ==================== RuleSet Element ==================== -->
 
     <!--
@@ -222,6 +603,43 @@
                         <choice minOccurs="0" maxOccurs="unbounded">
                             <element ref="rulii:rule"/>
                             <element ref="rulii:validationRule"/>
+                            <element ref="rulii:notNull"/>
+                            <element ref="rulii:notBlank"/>
+                            <element ref="rulii:notEmpty"/>
+                            <element ref="rulii:isNull"/>
+                            <element ref="rulii:blank"/>
+                            <element ref="rulii:alpha"/>
+                            <element ref="rulii:alphaNumeric"/>
+                            <element ref="rulii:ascii"/>
+                            <element ref="rulii:decimal"/>
+                            <element ref="rulii:numeric"/>
+                            <element ref="rulii:email"/>
+                            <element ref="rulii:url"/>
+                            <element ref="rulii:lowerCase"/>
+                            <element ref="rulii:upperCase"/>
+                            <element ref="rulii:assertFalse"/>
+                            <element ref="rulii:assertTrue"/>
+                            <element ref="rulii:assertEquals"/>
+                            <element ref="rulii:assertNotEquals"/>
+                            <element ref="rulii:positive"/>
+                            <element ref="rulii:positiveOrZero"/>
+                            <element ref="rulii:negative"/>
+                            <element ref="rulii:negativeOrZero"/>
+                            <element ref="rulii:future"/>
+                            <element ref="rulii:futureOrPresent"/>
+                            <element ref="rulii:past"/>
+                            <element ref="rulii:pastOrPresent"/>
+                            <element ref="rulii:fileExists"/>
+                            <element ref="rulii:min"/>
+                            <element ref="rulii:max"/>
+                            <element ref="rulii:decimalMin"/>
+                            <element ref="rulii:decimalMax"/>
+                            <element ref="rulii:size"/>
+                            <element ref="rulii:digits"/>
+                            <element ref="rulii:pattern"/>
+                            <element ref="rulii:startsWith"/>
+                            <element ref="rulii:endsWith"/>
+                            <element ref="rulii:in"/>
                             <element name="rule-ref" type="rulii:ruleReferenceType"/>
                         </choice>
                     </complexType>
