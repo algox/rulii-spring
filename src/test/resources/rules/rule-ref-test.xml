@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           http://www.rulii.org/spring/spring-rulii.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- ======================================================
+         Standalone rule bean used as a <bean-ref name="..."/> target
+    ====================================================== -->
+
+    <r:rule name="AdultRule" description="Passes when age >= 18">
+        <r:given>#ctx.age >= 18</r:given>
+    </r:rule>
+
+    <!-- ======================================================
+         String bean used as a constructor-arg <arg ref="..."/> target
+    ====================================================== -->
+
+    <bean id="helloPrefix" class="java.lang.String">
+        <constructor-arg value="Hello"/>
+    </bean>
+
+    <!-- ======================================================
+         <bean-ref> — delegates to an existing Spring-managed Rule bean
+    ====================================================== -->
+
+    <r:ruleset name="BeanRefRuleSet" description="Single bean-ref rule">
+        <r:rules>
+            <r:bean-ref name="AdultRule"/>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — typed constructor args (int min, int max)
+         Exercises: arg value + type
+    ====================================================== -->
+
+    <r:ruleset name="RangeRuleSet" description="RangeCheckRule wired via class-ref with typed args">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.RangeCheckRule">
+                <r:arg value="10"  type="int"/>
+                <r:arg value="100" type="int"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — String constructor arg (no type needed)
+         Exercises: arg value without type
+    ====================================================== -->
+
+    <r:ruleset name="PrefixRuleSet" description="PrefixRule wired via class-ref with plain String arg">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.PrefixRule">
+                <r:arg value="Hello"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — constructor arg supplied as a bean reference
+         Exercises: arg ref
+    ====================================================== -->
+
+    <r:ruleset name="PrefixRefRuleSet" description="PrefixRule wired via class-ref with arg ref">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.PrefixRule">
+                <r:arg ref="helloPrefix"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — property injection (no-arg constructor + setter)
+         Exercises: property value + type
+    ====================================================== -->
+
+    <r:ruleset name="ThresholdRuleSet" description="ThresholdRule wired via class-ref with property injection">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.ThresholdRule">
+                <r:property name="threshold" value="50" type="int"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — mixed: constructor arg + property injection
+         Exercises: both arg and property on the same class-ref
+    ====================================================== -->
+
+    <r:ruleset name="MixedRuleSet" description="RangeCheckRule with args and ThresholdRule with property in same ruleset">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.RangeCheckRule">
+                <r:arg value="1"   type="int"/>
+                <r:arg value="999" type="int"/>
+            </r:class-ref>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.ThresholdRule">
+                <r:property name="threshold" value="0" type="int"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <!-- ======================================================
+         <class-ref> — property ref (property injected as bean reference)
+         Exercises: property ref attribute
+         Note: String is not an ideal setter-injection candidate, so we
+         use PrefixRule via a wrapper that exposes the prefix as a settable
+         property — here we re-use ThresholdRule wired with a bean that
+         provides the int value.
+    ====================================================== -->
+
+    <bean id="thresholdValue" class="java.lang.Integer">
+        <constructor-arg value="25"/>
+    </bean>
+
+    <r:ruleset name="PropertyRefRuleSet" description="ThresholdRule with threshold injected via property ref">
+        <r:rules>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.ThresholdRule">
+                <r:property name="threshold" ref="thresholdValue"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+</beans>
