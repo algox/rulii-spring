@@ -267,7 +267,6 @@ class PredefinedValidationRuleXmlTest {
 
         @Test
         void failsWhenValueIsNonNull() {
-            assertTrue(isNullRule.isTrue(ctx()) || true, "pre-condition check — no binding means skipped");
             // Explicit non-null value should fail the condition
             RuleContext ctx = ctx();
             ctx.getBindings().bind("value", "something");
