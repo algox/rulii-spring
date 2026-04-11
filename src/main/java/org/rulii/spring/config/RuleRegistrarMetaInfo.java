@@ -21,25 +21,27 @@ import java.util.Arrays;
 
 /**
  * Represents meta information about the rules registered within a rule registrar.
- * Contains the rule packages and the total count of rules registered.
+ * Contains the rule packages, XML locations, and the total count of rules registered.
  *
  * <p>A single instance of this record is registered as a Spring bean by {@link RuleRegistrar}
  * after rule scanning completes. It can be injected into application components to inspect
- * which packages were scanned and how many rules were found.</p>
+ * which packages were scanned, which XML locations were loaded, and how many rules were found.</p>
  *
  * @param rulePackages the packages that were scanned for {@code @Rule}-annotated classes
+ * @param xmlLocations the classpath folders from which XML rule context files were loaded
  * @param ruleCount    the total number of rules successfully registered during scanning
  *
  * @author Max Arulananthan
  * @since 1.0
  *
  */
-public record RuleRegistrarMetaInfo(String[] rulePackages, int ruleCount) {
+public record RuleRegistrarMetaInfo(String[] rulePackages, String[] xmlLocations, int ruleCount) {
 
     @Override
     public String toString() {
         return "RuleRegistrarMetaInfo{" +
                 "rulePackages=" + Arrays.toString(rulePackages) +
+                ", xmlLocations=" + Arrays.toString(xmlLocations) +
                 ", ruleCount=" + ruleCount +
                 '}';
     }

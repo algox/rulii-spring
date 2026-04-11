@@ -136,7 +136,7 @@ public class SpringBootRuliiTest {
         assertNotNull(person);
         assertNotNull(testRule1);
         assertNotNull(testRule12);
-        assertEquals(rules.size(), 8);
+        assertEquals(rules.size(), 10);
     }
 
     @Test
@@ -207,7 +207,7 @@ public class SpringBootRuliiTest {
 
     @Test
     public void test13() {
-        assertEquals(ruleRegistry.getCount(), 9);
+        assertEquals(ruleRegistry.getCount(), 11);
     }
 
     @Test

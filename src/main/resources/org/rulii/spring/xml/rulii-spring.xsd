@@ -7,7 +7,7 @@
         attributeFormDefault="unqualified">
 
     <!--
-        spring-rulii.xsd — XML namespace schema for defining Rules and RuleSets
+        rulii-spring.xsd — XML namespace schema for defining Rules and RuleSets
         using the rulii framework in a Spring application context.
 
         Namespace: http://www.rulii.org/schema/rulii
@@ -195,6 +195,41 @@
         </complexType>
     </element>
 
+
+    <!-- ==================== Placeholder-aware Numeric Types ==================== -->
+
+    <!--
+        Accepts either a plain long/int literal or a Spring property placeholder of
+        the form ${key} (non-empty key).  Using xs:union means the schema validator
+        tries the numeric member first, then falls back to the placeholder pattern,
+        so plain values are still type-checked as proper integers while ${...} tokens
+        pass validation and are resolved at runtime by PropertyPlaceholderConfigurer.
+    -->
+    <simpleType name="longOrPlaceholder">
+        <union>
+            <simpleType>
+                <restriction base="long"/>
+            </simpleType>
+            <simpleType>
+                <restriction base="string">
+                    <pattern value="\$\{[^}]+\}"/>
+                </restriction>
+            </simpleType>
+        </union>
+    </simpleType>
+
+    <simpleType name="intOrPlaceholder">
+        <union>
+            <simpleType>
+                <restriction base="int"/>
+            </simpleType>
+            <simpleType>
+                <restriction base="string">
+                    <pattern value="\$\{[^}]+\}"/>
+                </restriction>
+            </simpleType>
+        </union>
+    </simpleType>
 
     <simpleType name="severityType">
         <restriction base="string">
@@ -458,7 +493,7 @@
         <complexType>
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
-                    <attribute name="min" type="long" use="required"/>
+                    <attribute name="min" type="rulii:longOrPlaceholder" use="required"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -468,7 +503,7 @@
         <complexType>
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
-                    <attribute name="max" type="long" use="required"/>
+                    <attribute name="max" type="rulii:longOrPlaceholder" use="required"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -501,8 +536,8 @@
         <complexType>
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
-                    <attribute name="min" type="int" use="required"/>
-                    <attribute name="max" type="int" use="required"/>
+                    <attribute name="min" type="rulii:intOrPlaceholder" use="required"/>
+                    <attribute name="max" type="rulii:intOrPlaceholder" use="required"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -512,8 +547,8 @@
         <complexType>
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
-                    <attribute name="maxIntegerDigits" type="int" use="required"/>
-                    <attribute name="maxFractionDigits" type="int" use="required"/>
+                    <attribute name="maxIntegerDigits" type="rulii:intOrPlaceholder" use="required"/>
+                    <attribute name="maxFractionDigits" type="rulii:intOrPlaceholder" use="required"/>
                 </extension>
             </complexContent>
         </complexType>

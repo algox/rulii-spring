@@ -20,7 +20,6 @@ package org.rulii.spring.xml;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 import org.springframework.util.Assert;
 
-
 public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
 
     /** Default scripting language used when an expression element carries no {@code language} attribute. */
@@ -28,61 +27,61 @@ public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
 
     @Override
     public void init() {
-        registerBeanDefinitionParser("scripting",      new ScriptingBeanDefinitionParser(this));
-        registerBeanDefinitionParser("rule",           new RuleBeanDefinitionParser(this));
+        registerBeanDefinitionParser("scripting", new ScriptingBeanDefinitionParser(this));
+        registerBeanDefinitionParser("rule", new RuleBeanDefinitionParser(this));
         registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser(this));
-        registerBeanDefinitionParser("ruleset",        new RuleSetBeanDefinitionParser(this));
+        registerBeanDefinitionParser("ruleset", new RuleSetBeanDefinitionParser(this));
 
         PredefinedValidationRuleBeanDefinitionParser predefined = new PredefinedValidationRuleBeanDefinitionParser(this);
 
         // No extra parameters
-        registerBeanDefinitionParser("notNull",         predefined);
-        registerBeanDefinitionParser("notBlank",        predefined);
-        registerBeanDefinitionParser("notEmpty",        predefined);
-        registerBeanDefinitionParser("isNull",          predefined);
-        registerBeanDefinitionParser("blank",           predefined);
-        registerBeanDefinitionParser("alpha",           predefined);
-        registerBeanDefinitionParser("alphaNumeric",    predefined);
-        registerBeanDefinitionParser("ascii",           predefined);
-        registerBeanDefinitionParser("decimal",         predefined);
-        registerBeanDefinitionParser("numeric",         predefined);
-        registerBeanDefinitionParser("email",           predefined);
-        registerBeanDefinitionParser("url",             predefined);
-        registerBeanDefinitionParser("lowerCase",       predefined);
-        registerBeanDefinitionParser("upperCase",       predefined);
-        registerBeanDefinitionParser("assertFalse",     predefined);
-        registerBeanDefinitionParser("assertTrue",      predefined);
-        registerBeanDefinitionParser("positive",        predefined);
-        registerBeanDefinitionParser("positiveOrZero",  predefined);
-        registerBeanDefinitionParser("negative",        predefined);
-        registerBeanDefinitionParser("negativeOrZero",  predefined);
-        registerBeanDefinitionParser("future",          predefined);
+        registerBeanDefinitionParser("notNull", predefined);
+        registerBeanDefinitionParser("notBlank", predefined);
+        registerBeanDefinitionParser("notEmpty", predefined);
+        registerBeanDefinitionParser("isNull", predefined);
+        registerBeanDefinitionParser("blank", predefined);
+        registerBeanDefinitionParser("alpha", predefined);
+        registerBeanDefinitionParser("alphaNumeric", predefined);
+        registerBeanDefinitionParser("ascii", predefined);
+        registerBeanDefinitionParser("decimal", predefined);
+        registerBeanDefinitionParser("numeric", predefined);
+        registerBeanDefinitionParser("email", predefined);
+        registerBeanDefinitionParser("url", predefined);
+        registerBeanDefinitionParser("lowerCase", predefined);
+        registerBeanDefinitionParser("upperCase", predefined);
+        registerBeanDefinitionParser("assertFalse", predefined);
+        registerBeanDefinitionParser("assertTrue", predefined);
+        registerBeanDefinitionParser("positive", predefined);
+        registerBeanDefinitionParser("positiveOrZero", predefined);
+        registerBeanDefinitionParser("negative", predefined);
+        registerBeanDefinitionParser("negativeOrZero", predefined);
+        registerBeanDefinitionParser("future", predefined);
         registerBeanDefinitionParser("futureOrPresent", predefined);
-        registerBeanDefinitionParser("past",            predefined);
-        registerBeanDefinitionParser("pastOrPresent",   predefined);
-        registerBeanDefinitionParser("fileExists",      predefined);
+        registerBeanDefinitionParser("past", predefined);
+        registerBeanDefinitionParser("pastOrPresent", predefined);
+        registerBeanDefinitionParser("fileExists", predefined);
 
         // Numeric bounds
-        registerBeanDefinitionParser("min",             predefined);
-        registerBeanDefinitionParser("max",             predefined);
-        registerBeanDefinitionParser("decimalMin",      predefined);
-        registerBeanDefinitionParser("decimalMax",      predefined);
+        registerBeanDefinitionParser("min", predefined);
+        registerBeanDefinitionParser("max", predefined);
+        registerBeanDefinitionParser("decimalMin", predefined);
+        registerBeanDefinitionParser("decimalMax", predefined);
 
         // Size / digits
-        registerBeanDefinitionParser("size",            predefined);
-        registerBeanDefinitionParser("digits",          predefined);
+        registerBeanDefinitionParser("size", predefined);
+        registerBeanDefinitionParser("digits", predefined);
 
         // Pattern
-        registerBeanDefinitionParser("pattern",         predefined);
+        registerBeanDefinitionParser("pattern", predefined);
 
         // Equality
-        registerBeanDefinitionParser("assertEquals",    predefined);
+        registerBeanDefinitionParser("assertEquals", predefined);
         registerBeanDefinitionParser("assertNotEquals", predefined);
 
         // Multi-value
-        registerBeanDefinitionParser("startsWith",      predefined);
-        registerBeanDefinitionParser("endsWith",        predefined);
-        registerBeanDefinitionParser("in",              predefined);
+        registerBeanDefinitionParser("startsWith", predefined);
+        registerBeanDefinitionParser("endsWith", predefined);
+        registerBeanDefinitionParser("in", predefined);
     }
 
     public String getDefaultLanguage() {

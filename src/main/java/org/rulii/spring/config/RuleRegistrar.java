@@ -29,11 +29,15 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MultiValueMap;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -52,10 +56,18 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry, BeanNameGenerator importBeanNameGenerator) {
         MultiValueMap<String, Object> attributes = importingClassMetadata.getAllAnnotationAttributes(RuleScan.class.getName());
+
+        // 1. Class-based rules are registered first (scanBasePackages takes priority)
         String[] rulePackages = getPackageNamesForScanning(getAttributes(attributes, "scanBasePackages"), importingClassMetadata.getClassName());
         int count = registerRules(rulePackages, registry);
+
+        // 2. XML-declared rules are loaded afterwards
+        String[] xmlLocations = getAttributes(attributes, "xmlLocations");
+        if (xmlLocations == null) xmlLocations = new String[0];
+        loadXmlContexts(xmlLocations, registry);
+
         // Register the Meta-Info
-        registerMetaInfo(rulePackages, count, registry, importBeanNameGenerator);
+        registerMetaInfo(rulePackages, xmlLocations, count, registry, importBeanNameGenerator);
     }
 
     /**
@@ -114,16 +126,59 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
     }
 
     /**
+     * Loads all {@code *.xml} files from each of the given classpath folder locations and
+     * registers their bean definitions directly into the supplied registry.
+     *
+     * <p>Each location is treated as a folder: the path is normalised to end with {@code /}
+     * and {@code *.xml} is appended before resource resolution. The
+     * {@link XmlBeanDefinitionReader} uses the same {@link BeanDefinitionRegistry}, so
+     * all beans from the XML files land in the same application context as class-scanned
+     * rules. The rulii namespace handler is picked up automatically via
+     * {@code META-INF/spring.handlers}.
+     *
+     * @param xmlLocations classpath folder locations declared on {@code @RuleScan}
+     * @param registry     the registry to load bean definitions into
+     */
+    private void loadXmlContexts(String[] xmlLocations, BeanDefinitionRegistry registry) {
+        if (xmlLocations.length == 0) return;
+
+        XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(registry);
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+        for (String location : xmlLocations) {
+            String pattern = location.endsWith("/") ? location + "*.xml" : location + "/*.xml";
+
+            try {
+                Resource[] resources = resolver.getResources(pattern);
+
+                if (resources.length == 0) {
+                    LOGGER.warn("No XML rule context files found at location [" + location + "]");
+                    continue;
+                }
+
+                for (Resource resource : resources) {
+                    LOGGER.info("Loading XML rule context [" + resource.getDescription() + "]");
+                    reader.loadBeanDefinitions(resource);
+                }
+            } catch (IOException e) {
+                throw new UnrulyException("Failed to resolve XML rule context resources at location [" + location + "]", e);
+            }
+        }
+    }
+
+    /**
      * Register the meta information for rules in the given packages into the provided BeanDefinitionRegistry.
      *
      * @param rulePackages              an array of strings representing the packages to scan for rule classes
+     * @param xmlLocations              an array of classpath folder locations from which XML context files were loaded
      * @param ruleCount                 the total number of rules successfully registered
      * @param registry                  the BeanDefinitionRegistry where the meta information will be registered
      * @param importBeanNameGenerator   the BeanNameGenerator for generating bean names
      */
-    private void registerMetaInfo(String[] rulePackages, int ruleCount, BeanDefinitionRegistry registry, BeanNameGenerator importBeanNameGenerator) {
+    private void registerMetaInfo(String[] rulePackages, String[] xmlLocations, int ruleCount, BeanDefinitionRegistry registry, BeanNameGenerator importBeanNameGenerator) {
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RuleRegistrarMetaInfo.class);
         builder.addConstructorArgValue(rulePackages);
+        builder.addConstructorArgValue(xmlLocations);
         builder.addConstructorArgValue(ruleCount);
         BeanDefinition definition = builder.getBeanDefinition();
         registry.registerBeanDefinition(importBeanNameGenerator.generateBeanName(definition, registry), definition);

@@ -114,8 +114,8 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDef
                 builder.addPropertyValue("max", element.getAttribute("max"));
             }
             case "digits" -> {
-                builder.addPropertyValue("maxIntegerDigits", Integer.parseInt(element.getAttribute("maxIntegerDigits")));
-                builder.addPropertyValue("maxFractionDigits", Integer.parseInt(element.getAttribute("maxFractionDigits")));
+                builder.addPropertyValue("maxIntegerDigits", element.getAttribute("maxIntegerDigits"));
+                builder.addPropertyValue("maxFractionDigits", element.getAttribute("maxFractionDigits"));
             }
             case "pattern" -> {
                 builder.addPropertyValue("pattern", element.getAttribute("pattern"));

@@ -6,9 +6,11 @@
            http://www.springframework.org/schema/beans
            https://www.springframework.org/schema/beans/spring-beans.xsd
            http://www.rulii.org/schema/rulii
-           http://www.rulii.org/spring/spring-rulii.xsd">
+           https://www.rulii.org/spring/rulii-spring.xsd">
 
-    <r:scripting defaultLanguage="el"/>
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
+        <property name="location" value="classpath:rules/predefined-validation-rule-test.properties"/>
+    </bean>
 
     <!-- ======================================================
          No-param rules — null / blank / string checks
@@ -67,27 +69,27 @@
          Runtime bindings: age (Integer)
     ====================================================== -->
 
-    <r:min name="MinAgeRule" binding="age" min="18"/>
+    <r:min name="MinAgeRule" binding="age" min="${age.rule.min}"/>
 
-    <r:max name="MaxAgeRule" binding="age" max="100"/>
+    <r:max name="MaxAgeRule" binding="age" max="${age.rule.max}"/>
 
     <!-- ======================================================
          Numeric bounds — decimal
          Runtime bindings: score (BigDecimal)
     ====================================================== -->
 
-    <r:decimalMin name="DecimalMinScoreRule" binding="score" min="0.0"/>
+    <r:decimalMin name="DecimalMinScoreRule" binding="score" min="${score.rule.decimalMin}"/>
 
-    <r:decimalMax name="DecimalMaxScoreRule" binding="score" max="10.0"/>
+    <r:decimalMax name="DecimalMaxScoreRule" binding="score" max="${score.rule.decimalMax}"/>
 
     <!-- ======================================================
          Size and digits
          Runtime bindings: name (String), price (String or BigDecimal)
     ====================================================== -->
 
-    <r:size name="NameSizeRule" binding="name" min="2" max="50"/>
+    <r:size name="NameSizeRule" binding="name" min="${name.size.min}" max="${name.size.max}"/>
 
-    <r:digits name="PriceDigitsRule" binding="price" maxIntegerDigits="5" maxFractionDigits="2"/>
+    <r:digits name="PriceDigitsRule" binding="price" maxIntegerDigits="${price.maxIntegerDigits}" maxFractionDigits="${price.maxFractionDigits}"/>
 
     <!-- ======================================================
          Pattern matching
@@ -110,9 +112,9 @@
          Runtime bindings: status (String)
     ====================================================== -->
 
-    <r:assertEquals    name="StatusEqualsActiveRule"  binding="status" value="ACTIVE"/>
+    <r:assertEquals name="StatusEqualsActiveRule" binding="status" value="ACTIVE"/>
 
-    <r:assertNotEquals name="StatusNotDeletedRule"    binding="status" value="DELETED"/>
+    <r:assertNotEquals name="StatusNotDeletedRule" binding="status" value="DELETED"/>
 
     <!-- ======================================================
          Multi-value — in, startsWith, endsWith
@@ -142,7 +144,7 @@
          Runtime bindings: age (Integer)
     ====================================================== -->
 
-    <r:min name="MinAgeByExprRule" expr="#ctx.age" min="0"/>
+    <r:min name="MinAgeByExprRule" expr="#ctx.age" min="${ageExpr.rule.min}"/>
 
     <!-- ======================================================
          Override form — errorCode, severity, and errorMessage overridden.
@@ -163,16 +165,16 @@
     ====================================================== -->
 
     <r:ruleset name="PersonValidationRuleSet" description="Validates a person record" validating="true">
-        <r:param name="name"   type="java.lang.String"/>
-        <r:param name="age"    type="java.lang.Integer"/>
+        <r:param name="name" type="java.lang.String"/>
+        <r:param name="age" type="java.lang.Integer"/>
         <r:param name="status" type="java.lang.String"/>
         <r:rules>
-            <r:notNull  name="PersonNameNotNull"   binding="name"/>
-            <r:notBlank name="PersonNameNotBlank"  binding="name"/>
-            <r:size     name="PersonNameSize"      binding="name"   min="2" max="100"/>
-            <r:min      name="PersonAgeMin"        binding="age"    min="0"/>
-            <r:max      name="PersonAgeMax"        binding="age"    max="150"/>
-            <r:in       name="PersonStatusValid"   binding="status">
+            <r:notNull name="PersonNameNotNull" binding="name"/>
+            <r:notBlank name="PersonNameNotBlank" binding="name"/>
+            <r:size name="PersonNameSize" binding="name" min="${person.name.size.min}" max="${person.name.size.max}"/>
+            <r:min name="PersonAgeMin" binding="age" min="${person.age.min}"/>
+            <r:max name="PersonAgeMax" binding="age" max="${person.age.max}"/>
+            <r:in name="PersonStatusValid" binding="status">
                 <r:item>ACTIVE</r:item>
                 <r:item>INACTIVE</r:item>
             </r:in>

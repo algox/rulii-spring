@@ -64,8 +64,8 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
     private String max;
 
     // Digits
-    private int maxIntegerDigits;
-    private int maxFractionDigits;
+    private String maxIntegerDigits;
+    private String maxFractionDigits;
 
     // Pattern
     private String pattern;
@@ -146,7 +146,7 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
             case "decimalMin"      -> Validators.decimalMin(fn, new BigDecimal(min));
             case "decimalMax"      -> Validators.decimalMax(fn, new BigDecimal(max));
             case "size"            -> Validators.size(fn, Integer.parseInt(min), Integer.parseInt(max));
-            case "digits"          -> Validators.digits(fn, maxIntegerDigits, maxFractionDigits);
+            case "digits"          -> Validators.digits(fn, Integer.parseInt(maxIntegerDigits), Integer.parseInt(maxFractionDigits));
             case "pattern"         -> buildPatternBuilder(fn);
             case "assertEquals"    -> Validators.assertEquals(fn, value);
             case "assertNotEquals" -> Validators.assertNotEquals(fn, value);
@@ -209,11 +209,11 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
         this.max = max;
     }
 
-    public void setMaxIntegerDigits(int maxIntegerDigits) {
+    public void setMaxIntegerDigits(String maxIntegerDigits) {
         this.maxIntegerDigits = maxIntegerDigits;
     }
 
-    public void setMaxFractionDigits(int maxFractionDigits) {
+    public void setMaxFractionDigits(String maxFractionDigits) {
         this.maxFractionDigits = maxFractionDigits;
     }
 

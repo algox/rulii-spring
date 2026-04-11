@@ -6,7 +6,7 @@
            http://www.springframework.org/schema/beans
            https://www.springframework.org/schema/beans/spring-beans.xsd
            http://www.rulii.org/schema/rulii
-           http://www.rulii.org/spring/spring-rulii.xsd">
+           https://www.rulii.org/spring/rulii-spring.xsd">
 
     <!-- Set SpEL as the default scripting language for all expressions in this file -->
     <r:scripting defaultLanguage="el"/>

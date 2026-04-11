@@ -42,6 +42,21 @@ public @interface RuleScan {
      * @return an array of strings representing the base packages for scanning
      */
     String[] scanBasePackages() default {};
+
+    /**
+     * Resource folders containing Spring XML context files that declare
+     * rulii rules and rulesets (e.g. {@code "classpath:rules/pricing/"}).
+     *
+     * <p>Each entry is treated as a folder: all {@code *.xml} files directly inside
+     * it are loaded via {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader}
+     * and their bean definitions are registered into the same application context.
+     *
+     * <p>Class-based rules from {@link #scanBasePackages()} are always registered
+     * first; XML locations are loaded afterwards.
+     *
+     * @return an array of classpath folder locations to scan for XML rule context files
+     */
+    String[] xmlLocations() default {};
 }
 
 

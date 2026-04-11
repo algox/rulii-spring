@@ -56,66 +56,117 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringJUnitConfig(locations = "classpath:rules/predefined-validation-rule-test.xml")
 class PredefinedValidationRuleXmlTest {
 
-    // ── No-param: null / blank ─────────────────────────────────────────────
-    @Autowired @Qualifier("NotNullRule")           private Rule notNullRule;
-    @Autowired @Qualifier("NotBlankRule")          private Rule notBlankRule;
-    @Autowired @Qualifier("IsNullRule")            private Rule isNullRule;
-    @Autowired @Qualifier("BlankRule")             private Rule blankRule;
+    // No-param: null / blank
+    @Autowired @Qualifier("NotNullRule")
+    private Rule notNullRule;
 
-    // ── No-param: string format ────────────────────────────────────────────
-    @Autowired @Qualifier("EmailRule")             private Rule emailRule;
-    @Autowired @Qualifier("UrlRule")               private Rule urlRule;
-    @Autowired @Qualifier("LowerCaseRule")         private Rule lowerCaseRule;
-    @Autowired @Qualifier("UpperCaseRule")         private Rule upperCaseRule;
-    @Autowired @Qualifier("AlphaRule")             private Rule alphaRule;
-    @Autowired @Qualifier("NumericRule")           private Rule numericRule;
+    @Autowired @Qualifier("NotBlankRule")
+    private Rule notBlankRule;
 
-    // ── No-param: booleans ─────────────────────────────────────────────────
-    @Autowired @Qualifier("AssertTrueRule")        private Rule assertTrueRule;
-    @Autowired @Qualifier("AssertFalseRule")       private Rule assertFalseRule;
+    @Autowired @Qualifier("IsNullRule")
+    private Rule isNullRule;
 
-    // ── No-param: sign ─────────────────────────────────────────────────────
-    @Autowired @Qualifier("PositiveRule")          private Rule positiveRule;
-    @Autowired @Qualifier("PositiveOrZeroRule")    private Rule positiveOrZeroRule;
-    @Autowired @Qualifier("NegativeRule")          private Rule negativeRule;
-    @Autowired @Qualifier("NegativeOrZeroRule")    private Rule negativeOrZeroRule;
+    @Autowired @Qualifier("BlankRule")
+    private Rule blankRule;
 
-    // ── Numeric bounds ─────────────────────────────────────────────────────
-    @Autowired @Qualifier("MinAgeRule")            private Rule minAgeRule;
-    @Autowired @Qualifier("MaxAgeRule")            private Rule maxAgeRule;
-    @Autowired @Qualifier("DecimalMinScoreRule")   private Rule decimalMinScoreRule;
-    @Autowired @Qualifier("DecimalMaxScoreRule")   private Rule decimalMaxScoreRule;
+    // No-param: string format
+    @Autowired @Qualifier("EmailRule")
+    private Rule emailRule;
 
-    // ── Size / digits ──────────────────────────────────────────────────────
-    @Autowired @Qualifier("NameSizeRule")          private Rule nameSizeRule;
-    @Autowired @Qualifier("PriceDigitsRule")       private Rule priceDigitsRule;
+    @Autowired @Qualifier("UrlRule")
+    private Rule urlRule;
 
-    // ── Pattern ────────────────────────────────────────────────────────────
-    @Autowired @Qualifier("CodePatternRule")            private Rule codePatternRule;
-    @Autowired @Qualifier("CaseInsensitivePatternRule") private Rule caseInsensitivePatternRule;
+    @Autowired @Qualifier("LowerCaseRule")
+    private Rule lowerCaseRule;
 
-    // ── Equality ───────────────────────────────────────────────────────────
-    @Autowired @Qualifier("StatusEqualsActiveRule") private Rule statusEqualsActiveRule;
-    @Autowired @Qualifier("StatusNotDeletedRule")   private Rule statusNotDeletedRule;
+    @Autowired @Qualifier("UpperCaseRule")
+    private Rule upperCaseRule;
 
-    // ── Multi-value ────────────────────────────────────────────────────────
-    @Autowired @Qualifier("StatusInRule")          private Rule statusInRule;
-    @Autowired @Qualifier("TitleStartsWithRule")   private Rule titleStartsWithRule;
-    @Autowired @Qualifier("EmailEndsWithRule")     private Rule emailEndsWithRule;
+    @Autowired @Qualifier("AlphaRule")
+    private Rule alphaRule;
 
-    // ── Expr form ──────────────────────────────────────────────────────────
-    @Autowired @Qualifier("MinAgeByExprRule")      private Rule minAgeByExprRule;
+    @Autowired @Qualifier("NumericRule")
+    private Rule numericRule;
 
-    // ── Override form ──────────────────────────────────────────────────────
-    @Autowired @Qualifier("OverriddenNotNullRule")  private Rule overriddenNotNullRule;
+    // No-param: booleans
+    @Autowired @Qualifier("AssertTrueRule")
+    private Rule assertTrueRule;
 
-    // ── Ruleset integration ────────────────────────────────────────────────
-    @Autowired @Qualifier("PersonValidationRuleSet") private RuleSet<?> personValidationRuleSet;
+    @Autowired @Qualifier("AssertFalseRule")
+    private Rule assertFalseRule;
 
+    // No-param: sign
+    @Autowired @Qualifier("PositiveRule")
+    private Rule positiveRule;
 
-    // ══════════════════════════════════════════════════════════════════════
+    @Autowired @Qualifier("PositiveOrZeroRule")
+    private Rule positiveOrZeroRule;
+
+    @Autowired @Qualifier("NegativeRule")
+    private Rule negativeRule;
+
+    @Autowired @Qualifier("NegativeOrZeroRule")
+    private Rule negativeOrZeroRule;
+
+    // Numeric bounds
+    @Autowired @Qualifier("MinAgeRule")
+    private Rule minAgeRule;
+
+    @Autowired @Qualifier("MaxAgeRule")
+    private Rule maxAgeRule;
+
+    @Autowired @Qualifier("DecimalMinScoreRule")
+    private Rule decimalMinScoreRule;
+
+    @Autowired @Qualifier("DecimalMaxScoreRule")
+    private Rule decimalMaxScoreRule;
+
+    // Size / digits
+    @Autowired @Qualifier("NameSizeRule")
+    private Rule nameSizeRule;
+
+    @Autowired @Qualifier("PriceDigitsRule")
+    private Rule priceDigitsRule;
+
+    // Pattern
+    @Autowired @Qualifier("CodePatternRule")
+    private Rule codePatternRule;
+
+    @Autowired @Qualifier("CaseInsensitivePatternRule")
+    private Rule caseInsensitivePatternRule;
+
+    // Equality
+    @Autowired @Qualifier("StatusEqualsActiveRule")
+    private Rule statusEqualsActiveRule;
+
+    @Autowired @Qualifier("StatusNotDeletedRule")
+    private Rule statusNotDeletedRule;
+
+    // Multi-value
+    @Autowired @Qualifier("StatusInRule")
+    private Rule statusInRule;
+
+    @Autowired @Qualifier("TitleStartsWithRule")
+    private Rule titleStartsWithRule;
+
+    @Autowired @Qualifier("EmailEndsWithRule")
+    private Rule emailEndsWithRule;
+
+    // Expr form
+    @Autowired @Qualifier("MinAgeByExprRule")
+    private Rule minAgeByExprRule;
+
+    // Override form
+    @Autowired @Qualifier("OverriddenNotNullRule")
+    private Rule overriddenNotNullRule;
+
+    // Ruleset integration
+    @Autowired @Qualifier("PersonValidationRuleSet")
+    private RuleSet<?> personValidationRuleSet;
+
+    // ------------------------------------------------------------------
     // notNull
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class NotNullRuleTests {
@@ -159,9 +210,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // notBlank
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class NotBlankRuleTests {
@@ -195,9 +246,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // isNull
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class IsNullRuleTests {
@@ -225,9 +276,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // blank
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class BlankRuleTests {
@@ -254,9 +305,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // email
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class EmailRuleTests {
@@ -290,9 +341,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // url
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class UrlRuleTests {
@@ -319,9 +370,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // lowerCase / upperCase
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class CaseRuleTests {
@@ -363,9 +414,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // alpha / numeric
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class AlphaNumericRuleTests {
@@ -402,9 +453,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // assertTrue / assertFalse
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class AssertBooleanRuleTests {
@@ -441,9 +492,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // positive / positiveOrZero / negative / negativeOrZero
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class SignRuleTests {
@@ -530,9 +581,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // min / max (integer bounds)
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class IntegerBoundsRuleTests {
@@ -593,9 +644,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // decimalMin / decimalMax
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class DecimalBoundsRuleTests {
@@ -656,9 +707,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // size
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class SizeRuleTests {
@@ -702,9 +753,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // digits
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class DigitsRuleTests {
@@ -743,9 +794,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // pattern
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class PatternRuleTests {
@@ -804,9 +855,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // assertEquals / assertNotEquals
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class EqualityRuleTests {
@@ -857,9 +908,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // in
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class InRuleTests {
@@ -893,9 +944,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // startsWith
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class StartsWithRuleTests {
@@ -934,9 +985,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // endsWith
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class EndsWithRuleTests {
@@ -970,9 +1021,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // Script expression form (expr attribute)
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class ExprFormTests {
@@ -1006,9 +1057,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // Override form (errorCode, severity, errorMessage)
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class OverrideFormTests {
@@ -1055,9 +1106,9 @@ class PredefinedValidationRuleXmlTest {
     }
 
 
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // Ruleset integration
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     @Nested
     class RuleSetIntegrationTests {
@@ -1080,8 +1131,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetPassesForValidPerson() {
             RuleContext ctx = ctxWithViolations();
-            ctx.getBindings().bind("name",   "Alice");
-            ctx.getBindings().bind("age",    30);
+            ctx.getBindings().bind("name", "Alice");
+            ctx.getBindings().bind("age", 30);
             ctx.getBindings().bind("status", "ACTIVE");
             assertDoesNotThrow(() -> personValidationRuleSet.run(ctx));
             assertTrue(violations(ctx).isEmpty());
@@ -1090,8 +1141,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetRecordsViolationForNullName() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   (String) null);
-            ctx.getBindings().bind("age",    30);
+            ctx.getBindings().bind("name", (String) null);
+            ctx.getBindings().bind("age", 30);
             ctx.getBindings().bind("status", "ACTIVE");
             assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
         }
@@ -1099,8 +1150,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetRecordsViolationForAgeBelowMin() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   "Bob");
-            ctx.getBindings().bind("age",    -1);
+            ctx.getBindings().bind("name", "Bob");
+            ctx.getBindings().bind("age", -1);
             ctx.getBindings().bind("status", "ACTIVE");
             assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
         }
@@ -1108,8 +1159,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetRecordsViolationForAgeAboveMax() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   "Bob");
-            ctx.getBindings().bind("age",    200);
+            ctx.getBindings().bind("name", "Bob");
+            ctx.getBindings().bind("age", 200);
             ctx.getBindings().bind("status", "ACTIVE");
             assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
         }
@@ -1117,8 +1168,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetRecordsViolationForInvalidStatus() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   "Carol");
-            ctx.getBindings().bind("age",    25);
+            ctx.getBindings().bind("name", "Carol");
+            ctx.getBindings().bind("age", 25);
             ctx.getBindings().bind("status", "DELETED");
             assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
         }
@@ -1126,8 +1177,8 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetRecordsViolationForNameTooShort() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   "X");
-            ctx.getBindings().bind("age",    25);
+            ctx.getBindings().bind("name", "X");
+            ctx.getBindings().bind("age", 25);
             ctx.getBindings().bind("status", "ACTIVE");
             assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
         }
@@ -1135,18 +1186,17 @@ class PredefinedValidationRuleXmlTest {
         @Test
         void ruleSetAccumulatesMultipleViolations() {
             RuleContext ctx = ctx();
-            ctx.getBindings().bind("name",   "X");      // fails notBlank(pass) + size(fail)
-            ctx.getBindings().bind("age",    -5);       // fails min
-            ctx.getBindings().bind("status", "DELETED");// fails in
+            ctx.getBindings().bind("name", "X");      // fails notBlank(pass) + size(fail)
+            ctx.getBindings().bind("age", -5);        // fails min
+            ctx.getBindings().bind("status", "DELETED"); // fails in
             ValidationException ex = assertThrows(ValidationException.class, () -> personValidationRuleSet.run(ctx));
             assertTrue(ex.getViolations().size() >= 3);
         }
     }
 
-
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
     // Helpers
-    // ══════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------
 
     /** Bare context with no bindings. */
     private static RuleContext ctx() {
