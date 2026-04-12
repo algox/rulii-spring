@@ -6,7 +6,7 @@
 
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>rulii-spring</name>
@@ -35,14 +35,14 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>1.2.0-SNAPSHOT</rulii.version>
-        <spring.beans.version>6.2.5</spring.beans.version>
-        <spring.context.version>6.2.5</spring.context.version>
-        <spring.boot.autoconfigure.version>3.4.4</spring.boot.autoconfigure.version>
-        <logback.classic.version>1.5.18</logback.classic.version>
+        <rulii.version>1.2.0</rulii.version>
+        <spring.beans.version>6.2.17</spring.beans.version>
+        <spring.context.version>6.2.17</spring.context.version>
+        <spring.boot.autoconfigure.version>3.5.13</spring.boot.autoconfigure.version>
+        <logback.classic.version>1.5.32</logback.classic.version>
         <junit.version>5.12.1</junit.version>
         <spring.boot.starter.version>3.4.4</spring.boot.starter.version>
-        <spring.boot.starter.test.version>3.4.4</spring.boot.starter.test.version>
+        <spring.boot.starter.test.version>3.5.13</spring.boot.starter.test.version>
         <graalvm.version>24.1.0</graalvm.version>
         <janino.version>3.1.12</janino.version>
 
@@ -50,6 +50,8 @@
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+        <central-publishing-plugin.version>0.7.0</central-publishing-plugin.version>
+        <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
     </properties>
 
     <dependencies>
@@ -173,4 +175,46 @@
         <developerConnection>scm:git:https://github.com/algox/rulii-spring.git</developerConnection>
         <url>https://github.com/algox/rulii-spring</url>
     </scm>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central-publishing-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

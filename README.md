@@ -1,4 +1,4 @@
-[rulii Maven Central]:http://search.maven.org/#artifactdetails|org.rulii|rulii-spring|1.0.0|
+[rulii Maven Central]:http://search.maven.org/#artifactdetails|org.rulii|rulii-spring|1.2.0|
 [Apache 2.0 License]:https://opensource.org/licenses/Apache-2.0
 
 # _rulii Spring_
@@ -14,7 +14,7 @@
 
 _rulii Spring_ brings rulii into the Spring ecosystem, allowing developers to define Rules and RuleSets using familiar Spring conventions.
 
-### [You can find the full documentation at rulii.com](https://rulii.com/spring/00-introduction.html)
+### [You can find the full documentation here](https://rulii.com/spring/00-introduction.html)
 
 ## Features
 
@@ -32,13 +32,13 @@ Maven
 <dependency>
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
 Grade
 ```groovy
-compile 'org.rulii:rulii-spring:1.0.0'
+compile 'org.rulii:rulii-spring:1.2.0'
 ```
 
 **Configuration**
