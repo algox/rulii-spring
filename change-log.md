@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0]
+## [1.2.0]
 
 ### Spring Expression Language (SpEL) Scripting Support (`org.rulii.spring.script.el`)
 
