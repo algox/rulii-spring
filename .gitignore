@@ -40,3 +40,5 @@ hs_err_pid*
 /target
 /releases
 /future
+/CLAUDE.md
+/.claude/settings.local.json

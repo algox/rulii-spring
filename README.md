@@ -210,6 +210,45 @@ public class OrderService {
 
 ---
 
+## Claude Code Skills
+
+This project ships with [Claude Code](https://claude.ai/code) skills that assist with common development tasks.
+If you have Claude Code installed, invoke any skill with its slash command from within the project directory.
+
+| Skill | Command | What it does |
+|---|---|---|
+| New Rule | `/new-rule` | Creates a rulii `@Rule` class with Spring injection — covers declarative and lambda styles, `@Value`, `@Autowired`, `ObjectFactory`, and preConditions |
+| New RuleSet | `/new-ruleset` | Full RuleSet builder API — lifecycle hooks, input params, stop conditions, `.validating()` mode, and Spring `@Bean` wiring with `@RuleScan` and `@Qualifier` |
+| New Validation Rule | `/new-validation-rule` | Creates a custom `ValueValidationRule` with its companion builder — covers supported types, `isValid()` logic, violation customisation, and the full checklist |
+| New XML RuleSet | `/new-xml-ruleset` | Declares rules, rulesets, and predefined validators in Spring XML using the rulii namespace — covers SpEL expressions, lifecycle hooks, property placeholders, and `@RuleScan` loading |
+| Write Test | `/write-test` | JUnit 5 + Spring Boot test patterns — `@SpringBootTest` setup, `@RuleScan` wiring, PASS/FAIL/SKIP scenarios, XML rule testing, and Spring message resolution |
+| Debug Rule | `/debug-rule` | Diagnostic guide for rules that produce the wrong result — covers SKIP (type mismatch), missing bindings, Spring discovery failures, `@Value` injection issues, and tracing |
+
+### Using the skills in your own project
+
+Since you'll typically reference rulii-spring as a dependency rather than working in this repo directly,
+copy the skills into your own project's `.claude/skills/` directory:
+
+```bash
+cp -r <path-to-rulii-spring>/.claude/skills/new-rule             .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/new-ruleset           .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/new-validation-rule   .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/new-xml-ruleset       .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/write-test            .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/debug-rule            .claude/skills/
+```
+
+Once copied, run `claude` from your project root — skills in `.claude/skills/` are discovered automatically.
+
+### Prerequisites
+
+Install Claude Code:
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+---
+
 ## Documentation
 
 **[Full documentation at rulii.org](https://rulii.org)**
