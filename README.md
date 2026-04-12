@@ -14,7 +14,7 @@
 
 _rulii Spring_ brings rulii into the Spring ecosystem, allowing developers to define Rules and RuleSets using familiar Spring conventions.
 
-### [You can find the full documentation here](https://rulii.com/spring/00-introduction.html)
+### [You can find the full documentation here](https://rulii.com/spring/introduction.html)
 
 ## Features
 
