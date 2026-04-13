@@ -35,7 +35,7 @@ _rulii-spring_ brings the [rulii](https://github.com/algox/rulii) rule engine in
 It provides auto-configuration, classpath scanning for rules, and seamless injection of Spring-managed beans
 directly into rule classes — so your rules can participate fully in the Spring application context.
 
-If you are new to rulii, start with the [rulii documentation](https://rulii.org/introduction.html) before
+If you are new to rulii, start with the [rulii documentation](https://rulii.com/introduction.html) before
 reading this guide.
 
 ---
@@ -251,10 +251,10 @@ npm install -g @anthropic-ai/claude-code
 
 ## Documentation
 
-**[Full documentation at rulii.org](https://rulii.org)**
+**[Full documentation at rulii.com](https://rulii.com)**
 
-- [Spring integration docs](https://rulii.org/spring/introduction.html)
-- [rulii core documentation](https://rulii.org/introduction.html)
+- [Spring integration docs](https://rulii.com/spring/introduction.html)
+- [rulii core documentation](https://rulii.com/introduction.html)
 - [Javadoc (1.2.0)](https://javadoc.io/doc/org.rulii/rulii-spring/1.2.0)
 - [Spring Boot sample project](https://github.com/algox/rulii-samples/tree/develop/spring-boot-sample)
 - [All sample projects](https://github.com/algox/rulii-samples)
