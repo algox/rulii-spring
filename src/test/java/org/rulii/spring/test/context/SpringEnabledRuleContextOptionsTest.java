@@ -24,9 +24,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.convert.ConverterRegistry;
+import org.rulii.registry.RuleRegistry;
 import org.rulii.spring.context.SpringEnabledRuleContextOptions;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
+import org.rulii.trace.Tracer;
 import org.rulii.util.reflect.ObjectFactory;
 
 import java.time.Clock;
@@ -45,12 +47,15 @@ public class SpringEnabledRuleContextOptionsTest {
     @Mock private ConverterRegistry converterRegistry;
     @Mock private ObjectFactory objectFactory;
     @Mock private MessageResolver messageResolver;
+    @Mock private RuleRegistry ruleRegistry;
+    @Mock private Tracer tracer;
 
     private SpringEnabledRuleContextOptions buildOptions() {
         return new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH);
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH,
+                ruleRegistry, tracer);
     }
 
     @Test
@@ -89,7 +94,7 @@ public class SpringEnabledRuleContextOptionsTest {
         SpringEnabledRuleContextOptions options = new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), clock, Locale.ENGLISH);
+                Executors.newSingleThreadExecutor(), clock, Locale.ENGLISH, ruleRegistry, tracer);
         assertEquals(clock, options.getClock());
     }
 
@@ -98,7 +103,7 @@ public class SpringEnabledRuleContextOptionsTest {
         SpringEnabledRuleContextOptions options = new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.FRANCE);
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.FRANCE, ruleRegistry, tracer);
         assertEquals(Locale.FRANCE, options.getLocale());
     }
 
@@ -108,7 +113,7 @@ public class SpringEnabledRuleContextOptionsTest {
         SpringEnabledRuleContextOptions options = new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                executorService, Clock.systemDefaultZone(), Locale.ENGLISH);
+                executorService, Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer);
         assertEquals(executorService, options.getExecutorService());
     }
 
@@ -124,7 +129,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 null, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -132,7 +137,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, null, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -140,7 +145,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, null,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -148,7 +153,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 null, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -156,7 +161,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, null, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -164,7 +169,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, null,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -172,7 +177,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                null, Clock.systemDefaultZone(), Locale.ENGLISH));
+                null, Clock.systemDefaultZone(), Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -180,7 +185,7 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), null, Locale.ENGLISH));
+                Executors.newSingleThreadExecutor(), null, Locale.ENGLISH, ruleRegistry, tracer));
     }
 
     @Test
@@ -188,6 +193,6 @@ public class SpringEnabledRuleContextOptionsTest {
         assertThrows(Exception.class, () -> new SpringEnabledRuleContextOptions(
                 matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver,
-                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), null));
+                Executors.newSingleThreadExecutor(), Clock.systemDefaultZone(), null, ruleRegistry, tracer));
     }
 }

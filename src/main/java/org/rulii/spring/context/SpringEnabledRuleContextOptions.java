@@ -21,8 +21,10 @@ import org.rulii.bind.match.BindingMatchingStrategy;
 import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.ConverterRegistry;
+import org.rulii.registry.RuleRegistry;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
+import org.rulii.trace.Tracer;
 import org.rulii.util.reflect.ObjectFactory;
 import org.springframework.util.Assert;
 
@@ -48,6 +50,9 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     private final ExecutorService executorService;
     private final Clock clock;
     private final Locale locale;
+    private final RuleRegistry ruleRegistry;
+    private final Tracer tracer;
+
     /**
      * Constructs a new instance of SpringEnabledRuleContextOptions with the provided parameters.
      *
@@ -64,7 +69,7 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     public SpringEnabledRuleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                            MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
                                            ObjectFactory objectFactory, MessageResolver messageResolver, ExecutorService executorService,
-                                           Clock clock, Locale locale) {
+                                           Clock clock, Locale locale, RuleRegistry ruleRegistry, Tracer tracer) {
         super();
         Assert.notNull(matchingStrategy, "matchingStrategy cannot be null.");
         Assert.notNull(parameterResolver, "parameterResolver cannot be null.");
@@ -75,6 +80,8 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
         Assert.notNull(executorService, "executorService cannot be null.");
         Assert.notNull(clock, "clock cannot be null.");
         Assert.notNull(locale, "locale cannot be null.");
+        Assert.notNull(ruleRegistry, "ruleRegistry cannot be null.");
+        Assert.notNull(tracer, "tracer cannot be null.");
         this.matchingStrategy = matchingStrategy;
         this.parameterResolver = parameterResolver;
         this.messageFormatter = messageFormatter;
@@ -84,6 +91,8 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
         this.executorService = executorService;
         this.clock = clock;
         this.locale = locale;
+        this.ruleRegistry = ruleRegistry;
+        this.tracer = tracer;
     }
 
     @Override
@@ -132,6 +141,16 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
     }
 
     @Override
+    public RuleRegistry getRuleRegistry() {
+        return ruleRegistry;
+    }
+
+    @Override
+    public Tracer getTracer() {
+        return tracer;
+    }
+
+    @Override
     public String toString() {
         return "SpringEnabledRuleContextOptions{" +
                 "matchingStrategy=" + matchingStrategy +
@@ -139,10 +158,12 @@ public class SpringEnabledRuleContextOptions implements RuleContextOptions {
                 ", messageFormatter=" + messageFormatter +
                 ", converterRegistry=" + converterRegistry +
                 ", objectFactory=" + objectFactory +
-                ", clock=" + clock +
-                ", locale=" + locale +
                 ", messageResolver=" + messageResolver +
                 ", executorService=" + executorService +
+                ", clock=" + clock +
+                ", locale=" + locale +
+                ", ruleRegistry=" + ruleRegistry +
+                ", tracer=" + tracer +
                 '}';
     }
 }

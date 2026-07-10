@@ -67,4 +67,19 @@
         <r:finalizer>'fin'</r:finalizer>
     </r:ruleset>
 
+    <!-- ======================================================
+         Ruleset that declares BOTH validating="true" and a custom
+         finalizer — the two must compose, not overwrite each other.
+         Bindings expected: value (String), finalized (Boolean)
+    ====================================================== -->
+
+    <r:notNull name="ValueRequiredRule" binding="value"/>
+
+    <r:ruleset name="ValidatingFinalizerRuleSet" description="validating and finalizer compose" validating="true">
+        <r:rules>
+            <r:bean-ref name="ValueRequiredRule"/>
+        </r:rules>
+        <r:finalizer>#ctx.setValue('finalized', true)</r:finalizer>
+    </r:ruleset>
+
 </beans>

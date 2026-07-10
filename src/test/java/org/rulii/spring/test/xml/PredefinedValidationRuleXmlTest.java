@@ -581,6 +581,41 @@ class PredefinedValidationRuleXmlTest {
 
 
     // ------------------------------------------------------------------
+    // Decimal string coercion (rulii 2.0: string values coerce via
+    // BigDecimal — decimal strings no longer falsely FAIL)
+    // ------------------------------------------------------------------
+
+    @Nested
+    class DecimalStringCoercionTests {
+
+        @Test
+        void minAgePassesForDecimalStringAboveBoundary() {
+            assertTrue(minAgeRule.isTrue(ctx("age", "18.5")));
+        }
+
+        @Test
+        void minAgeFailsForDecimalStringBelowBoundary() {
+            assertFalse(minAgeRule.isTrue(ctx("age", "17.5")));
+        }
+
+        @Test
+        void maxAgeFailsForDecimalStringAboveBoundary() {
+            assertFalse(maxAgeRule.isTrue(ctx("age", "100.5")));
+        }
+
+        @Test
+        void positivePassesForPositiveDecimalString() {
+            assertTrue(positiveRule.isTrue(ctx("number", "0.5")));
+        }
+
+        @Test
+        void negativeFailsForPositiveDecimalString() {
+            assertFalse(negativeRule.isTrue(ctx("number", "0.5")));
+        }
+    }
+
+
+    // ------------------------------------------------------------------
     // min / max (integer bounds)
     // ------------------------------------------------------------------
 

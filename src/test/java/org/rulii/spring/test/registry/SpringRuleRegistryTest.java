@@ -25,6 +25,7 @@ import org.rulii.model.UnrulyException;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.registry.SpringRuleRegistry;
+import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 
@@ -95,6 +96,7 @@ public class SpringRuleRegistryTest {
     @SuppressWarnings("unchecked")
     public void testGetByNameAndType() {
         Rule rule = mock(Rule.class);
+        when(beanFactory.containsBean("myRule")).thenReturn(true);
         when(beanFactory.getBean("myRule", Rule.class)).thenReturn(rule);
         SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertEquals(rule, registry.get("myRule", Rule.class));
@@ -104,9 +106,47 @@ public class SpringRuleRegistryTest {
     @SuppressWarnings("unchecked")
     public void testGetByNameDelegatesToFactory() {
         Rule rule = mock(Rule.class);
+        when(beanFactory.containsBean("myRule")).thenReturn(true);
         when(beanFactory.getBean("myRule", org.rulii.model.Runnable.class)).thenReturn(rule);
         SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertEquals(rule, registry.get("myRule"));
+    }
+
+    @Test
+    public void testGetUnknownNameReturnsNull() {
+        when(beanFactory.containsBean("unknown")).thenReturn(false);
+        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+        assertNull(registry.get("unknown"));
+    }
+
+    @Test
+    public void testGetUnknownNameAndTypeReturnsNull() {
+        when(beanFactory.containsBean("unknown")).thenReturn(false);
+        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+        assertNull(registry.get("unknown", Rule.class));
+    }
+
+    @Test
+    public void testGetRuleUnknownNameReturnsNull() {
+        when(beanFactory.containsBean("unknown")).thenReturn(false);
+        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+        assertNull(registry.getRule("unknown"));
+    }
+
+    @Test
+    public void testGetRuleSetUnknownNameReturnsNull() {
+        when(beanFactory.containsBean("unknown")).thenReturn(false);
+        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+        assertNull(registry.getRuleSet("unknown"));
+    }
+
+    @Test
+    public void testGetWrongTypeReturnsNull() {
+        when(beanFactory.containsBean("myRuleSet")).thenReturn(true);
+        when(beanFactory.getBean("myRuleSet", Rule.class))
+                .thenThrow(new BeanNotOfRequiredTypeException("myRuleSet", Rule.class, RuleSet.class));
+        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+        assertNull(registry.get("myRuleSet", Rule.class));
     }
 
     @Test

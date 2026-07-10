@@ -53,6 +53,12 @@ public final class BeanNames {
     /** Bean name for the {@link org.rulii.script.ScriptProcessorManager} bean. */
     public static final String SCRIPT_MANAGER               = "rulii.scriptManager";
 
+    /** Bean name for the {@link org.rulii.trace.Tracer} bean. */
+    public static final String TRACER                       = "rulii.tracer";
+
+    /** Bean name for the {@link java.util.concurrent.ExecutorService} bean. */
+    public static final String EXECUTOR_SERVICE             = "rulii.executorService";
+
     private BeanNames() {
         super();
     }

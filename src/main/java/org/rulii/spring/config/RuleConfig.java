@@ -32,12 +32,17 @@ import org.rulii.spring.registry.SpringRuleRegistry;
 import org.rulii.spring.text.SpringEnvironmentMessageResolver;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
+import org.rulii.rule.RuleListener;
+import org.rulii.ruleset.RuleSetListener;
+import org.rulii.trace.RuliiListener;
+import org.rulii.trace.Tracer;
 import org.rulii.util.reflect.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -51,6 +56,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -169,10 +175,22 @@ public class RuleConfig {
         return ctx != null ? new SpringRuleRegistry(ctx) : RuleRegistry.builder().build();
     }
 
+    /**
+     * Exposes the process-wide {@link ScriptProcessorManager} singleton as a bean and registers
+     * any {@link ScriptProcessorFactory} beans found in the application context into it
+     * (in addition to factories discovered via {@code META-INF/services}).
+     *
+     * <p>Note: {@code ScriptProcessorManager} is a JVM-wide singleton — registrations are global,
+     * shared across (and outliving) application contexts. Overriding this bean can only replace
+     * the registration step, not substitute a different manager instance.
+     *
+     * @param factories the ScriptProcessorFactory beans to register
+     * @return the singleton ScriptProcessorManager instance
+     */
     @Bean(BeanNames.SCRIPT_MANAGER)
     @ConditionalOnMissingBean(ScriptProcessorManager.class)
     public ScriptProcessorManager scriptProcessorManager(@Autowired(required = false) List<ScriptProcessorFactory> factories) {
-        ScriptProcessorManager result = new ScriptProcessorManager();
+        ScriptProcessorManager result = ScriptProcessorManager.getInstance();
 
         if (factories != null && !factories.isEmpty()) {
              factories.forEach(factory -> {
@@ -185,6 +203,66 @@ public class RuleConfig {
     }
 
     /**
+     * Creates a Tracer instance if no other bean of type Tracer is available.
+     * Any listener beans found in the application context are automatically registered:
+     * {@link RuliiListener} beans receive all event categories; {@link RuleListener} and
+     * {@link RuleSetListener} beans receive their respective category only.
+     *
+     * @param ruliiListeners listener beans to register for all event categories
+     * @param ruleListeners listener beans to register for rule events
+     * @param ruleSetListeners listener beans to register for ruleset events
+     * @return a new Tracer instance with all listener beans registered
+     */
+    @Bean(BeanNames.TRACER)
+    @ConditionalOnMissingBean(Tracer.class)
+    public Tracer tracer(@Autowired(required = false) List<RuliiListener> ruliiListeners,
+                         @Autowired(required = false) List<RuleListener> ruleListeners,
+                         @Autowired(required = false) List<RuleSetListener> ruleSetListeners) {
+        Tracer result = Tracer.builder().build();
+
+        if (ruliiListeners != null) {
+            ruliiListeners.forEach(listener -> {
+                LOGGER.info("Registering RuliiListener [" + listener.getClass() + "]");
+                result.addListener(listener);
+            });
+        }
+
+        if (ruleListeners != null) {
+            ruleListeners.stream()
+                    .filter(listener -> !(listener instanceof RuliiListener))
+                    .forEach(listener -> {
+                        LOGGER.info("Registering RuleListener [" + listener.getClass() + "]");
+                        result.addListener(listener);
+                    });
+        }
+
+        if (ruleSetListeners != null) {
+            ruleSetListeners.stream()
+                    .filter(listener -> !(listener instanceof RuliiListener))
+                    .forEach(listener -> {
+                        LOGGER.info("Registering RuleSetListener [" + listener.getClass() + "]");
+                        result.addListener(listener);
+                    });
+        }
+
+        return result;
+    }
+
+    /**
+     * Creates the ExecutorService used for async rule execution if no bean named
+     * {@link BeanNames#EXECUTOR_SERVICE} is present. Tied to the application context
+     * lifecycle; shut down gracefully when the context closes.
+     *
+     * @return a new fixed thread pool sized to the available processors (minimum 2)
+     */
+    @Bean(name = BeanNames.EXECUTOR_SERVICE, destroyMethod = "shutdown")
+    @ConditionalOnMissingBean(name = BeanNames.EXECUTOR_SERVICE)
+    public ExecutorService executorService() {
+        int threads = Math.max(2, Runtime.getRuntime().availableProcessors());
+        return Executors.newFixedThreadPool(threads);
+    }
+
+    /**
      * Creates a RuleContextOptions instance if no other bean of type RuleContextOptions is available.
      *
      * @param matchingStrategy the BindingMatchingStrategy to use
@@ -193,16 +271,21 @@ public class RuleConfig {
      * @param converterRegistry the ConverterRegistry to use
      * @param objectFactory the ObjectFactory to use
      * @param messageResolver the MessageResolver to use
+     * @param ruleRegistry the RuleRegistry to use
+     * @param tracer the Tracer to use
+     * @param executorService the ExecutorService to use for async rule execution
      * @return a new instance of RuleContextOptions
      */
     @Bean(BeanNames.SPRING_CONTEXT_OPTIONS)
     @ConditionalOnMissingBean(RuleContextOptions.class)
     public RuleContextOptions ruleContextOptions(BindingMatchingStrategy matchingStrategy, ParameterResolver parameterResolver,
                                                  MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
-                                                 ObjectFactory objectFactory, MessageResolver messageResolver) {
+                                                 ObjectFactory objectFactory, MessageResolver messageResolver,
+                                                 RuleRegistry ruleRegistry, Tracer tracer,
+                                                 @Qualifier(BeanNames.EXECUTOR_SERVICE) ExecutorService executorService) {
         return new SpringEnabledRuleContextOptions(matchingStrategy, parameterResolver, messageFormatter,
-                converterRegistry, objectFactory, messageResolver, Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors())),
-                Clock.systemDefaultZone(), Locale.getDefault());
+                converterRegistry, objectFactory, messageResolver, executorService,
+                Clock.systemDefaultZone(), Locale.getDefault(), ruleRegistry, tracer);
     }
 
     /**

@@ -22,10 +22,12 @@ import org.rulii.lib.spring.core.annotation.AnnotationUtils;
 import org.rulii.model.UnrulyException;
 import org.rulii.rule.ClassBasedRuleBuilder;
 import org.rulii.spring.annotation.RuleScan;
+import org.rulii.util.reflect.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
@@ -118,7 +120,9 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar {
 
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RuleBeanBuilder.class);
         builder.addConstructorArgValue(ruleClass);
-        builder.addConstructorArgReference(BeanNames.OBJECT_FACTORY);
+        // Reference by type (not by name) so an application-supplied ObjectFactory bean,
+        // registered under any name, is honored - RuleConfig's bean is conditional on the type.
+        builder.addConstructorArgValue(new RuntimeBeanReference(ObjectFactory.class));
         builder.setFactoryMethod("build");
         registry.registerBeanDefinition(ClassBasedRuleBuilder.getRuleName(ruleClass), builder.getBeanDefinition());
 

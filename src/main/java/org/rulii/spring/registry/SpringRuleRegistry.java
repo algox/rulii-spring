@@ -22,6 +22,7 @@ import org.rulii.model.UnrulyException;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
+import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
@@ -84,7 +85,13 @@ public class SpringRuleRegistry implements RuleRegistry {
     public <R, T extends Runnable<R>> T get(String name, Class<T> type) {
         Assert.notNull(name, "name cannot be null.");
         Assert.notNull(type, "type cannot be null.");
-        return getCtx().getBean(name, type);
+        ListableBeanFactory ctx = getCtx();
+        if (!ctx.containsBean(name)) return null;
+        try {
+            return ctx.getBean(name, type);
+        } catch (BeanNotOfRequiredTypeException e) {
+            return null;
+        }
     }
 
     /**

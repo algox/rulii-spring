@@ -20,8 +20,9 @@ package org.rulii.spring.test.xml;
 import org.junit.jupiter.api.Test;
 import org.rulii.context.RuleContext;
 import org.rulii.rule.Rule;
-import org.rulii.ruleset.InputParameter;
+import org.rulii.model.InputParameter;
 import org.rulii.ruleset.RuleSet;
+import org.rulii.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -52,6 +53,7 @@ class RuleSetXmlTest {
     @Autowired @Qualifier("BasicRuleSet")        private RuleSet<?> basicRuleSet;
     @Autowired @Qualifier("ParameterizedRuleSet") private RuleSet<?> parameterizedRuleSet;
     @Autowired @Qualifier("LifecycleRuleSet")    private RuleSet<?> lifecycleRuleSet;
+    @Autowired @Qualifier("ValidatingFinalizerRuleSet") private RuleSet<?> validatingFinalizerRuleSet;
 
     // Standalone rules also registered as beans in the same XML
     @Autowired @Qualifier("AdultCheckRule")  private Rule adultCheckRule;
@@ -250,6 +252,36 @@ class RuleSetXmlTest {
         ctx.getBindings().bind("value", 10);  // pre-condition and inline rule: value > 0 and value > 5
         ctx.getBindings().bind("count", 1);
         assertDoesNotThrow(() -> lifecycleRuleSet.run(ctx));
+    }
+
+    // ------------------------------------------------------------------
+    // ValidatingFinalizerRuleSet — validating="true" + custom finalizer
+    // ------------------------------------------------------------------
+
+    @Test
+    void validatingFinalizerRuleSetBeanIsCreated() {
+        assertNotNull(validatingFinalizerRuleSet);
+    }
+
+    @Test
+    void validatingRuleSetWithFinalizerThrowsValidationExceptionOnFailure() {
+        RuleContext ctx = buildContext();
+        ctx.getBindings().bind("value", String.class, null);   // NotNull rule fails
+        ctx.getBindings().bind("finalized", false);
+
+        assertThrows(ValidationException.class, () -> validatingFinalizerRuleSet.run(ctx));
+        assertTrue(ctx.getBindings().getValue("finalized", Boolean.class),
+                "custom finalizer must run even though validating mode threw");
+    }
+
+    @Test
+    void validatingRuleSetWithFinalizerRunsCleanlyOnSuccess() {
+        RuleContext ctx = buildContext();
+        ctx.getBindings().bind("value", "present");            // NotNull rule passes
+        ctx.getBindings().bind("finalized", false);
+
+        assertDoesNotThrow(() -> validatingFinalizerRuleSet.run(ctx));
+        assertTrue(ctx.getBindings().getValue("finalized", Boolean.class));
     }
 
     // ------------------------------------------------------------------
