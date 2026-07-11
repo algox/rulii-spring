@@ -18,24 +18,23 @@
 package org.rulii.spring.xml;
 
 import org.rulii.model.UnrulyException;
-import org.rulii.model.condition.Condition;
 import org.rulii.rule.Rule;
-import org.rulii.rule.RuleDefinition;
-import org.rulii.script.Script;
-import org.rulii.script.ScriptProcessorManager;
 import org.rulii.validation.Severity;
 import org.rulii.validation.ValidationRuleBuilder;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
 
+import java.util.Locale;
+
 /**
  * Spring {@link FactoryBean} that constructs a validation {@link Rule} from a
  * {@code <rulii:validationRule>} XML element.
  *
- * <p>The {@code given} condition is compiled from a script expression via the Spring-managed
- * {@link ScriptProcessorManager}. All validation metadata (errorCode, severity, messages) are
- * passed directly to the rulii {@code ValidationRuleBuilder}.
+ * <p>The {@code given} condition is compiled through the standard rulii
+ * {@code Script.builder()} pipeline via {@link ScriptExpression#toCondition}. All validation
+ * metadata (errorCode, severity, messages) are passed directly to the rulii
+ * {@code ValidationRuleBuilder}.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -54,27 +53,23 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
 
     private Rule rule;
 
-    public ValidationRuleFactoryBean() {}
+    public ValidationRuleFactoryBean() {
+        super();
+    }
 
     @Override
     public void afterPropertiesSet() {
         if (condition == null) throw new UnrulyException("ValidationRule '" + name + "' must have a <given> condition.");
 
-        final String ruleName = this.name;
-        ValidationRuleBuilder builder = new ValidationRuleBuilder(ruleName, buildCondition(condition));
+        ValidationRuleBuilder builder = new ValidationRuleBuilder(name, condition.toCondition(defaultLanguage));
 
         builder.errorCode(errorCode);
         if (StringUtils.hasText(description)) builder.description(description);
-        if (StringUtils.hasText(severity)) builder.severity(Severity.valueOf(severity.toUpperCase()));
+        if (StringUtils.hasText(severity)) builder.severity(Severity.valueOf(severity.toUpperCase(Locale.ROOT)));
         if (StringUtils.hasText(errorMessage)) builder.errorMessage(errorMessage);
         if (StringUtils.hasText(defaultMessage)) builder.defaultMessage(defaultMessage);
 
         rule = builder.build();
-    }
-
-    private Condition buildCondition(ScriptExpression expr) {
-        return Condition.builder().build(
-                Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression()));
     }
 
     @Override

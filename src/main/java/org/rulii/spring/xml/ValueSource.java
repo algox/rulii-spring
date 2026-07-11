@@ -17,6 +17,8 @@
  */
 package org.rulii.spring.xml;
 
+import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 
@@ -40,11 +42,15 @@ class ValueSource {
     private final ScriptExpression script;
 
     ValueSource(String bindingName) {
+        super();
+        Assert.hasText(bindingName, "bindingName cannot be null or empty.");
         this.bindingName = bindingName;
         this.script = null;
     }
 
     ValueSource(ScriptExpression script) {
+        super();
+        Assert.notNull(script, "script cannot be null.");
         this.bindingName = null;
         this.script = script;
     }
@@ -64,13 +70,24 @@ class ValueSource {
     /**
      * Parses a {@link ValueSource} from the given element's attributes.
      * Checks {@code binding} first; falls back to {@code expr} attribute or text body.
+     * A missing value source is reported as a parse error with the XML source location.
      *
-     * @param element the predefined validation rule element
+     * @param element       the predefined validation rule element
+     * @param parserContext the parser context used for error reporting
      * @return a {@link ValueSource} representing either a binding or a script expression
      */
-    static ValueSource parse(Element element) {
+    static ValueSource parse(Element element, ParserContext parserContext) {
         String binding = element.getAttribute("binding");
         if (StringUtils.hasText(binding)) return new ValueSource(binding);
-        return new ValueSource(ScriptExpression.parse(element));
+
+        ScriptExpression script = ScriptExpression.tryParse(element);
+
+        if (script == null) {
+            parserContext.getReaderContext().error("<" + element.getLocalName()
+                    + "> must supply either a binding attribute or a script expression (expr attribute or element body).", element);
+            return null;
+        }
+
+        return new ValueSource(script);
     }
 }

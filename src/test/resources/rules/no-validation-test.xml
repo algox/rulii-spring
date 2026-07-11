@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- Loaded with XSD validation DISABLED, so no schema attribute defaults are
+         injected into the DOM. The ruleset omits the validating attribute; parsing
+         must not depend on the schema default being present. -->
+    <r:ruleset name="NoValidationRuleSet" description="Parsed without schema validation">
+        <r:rules>
+            <r:rule name="NoValidationRule">
+                <r:given>1 == 1</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
+
+</beans>

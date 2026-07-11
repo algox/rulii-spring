@@ -16,10 +16,11 @@
     <!-- ==================== Scripting Configuration ==================== -->
 
     <!--
-        <rulii:scripting defaultLanguage="spel"/>
+        <rulii:scripting defaultLanguage="el"/>
 
         Configures the default scripting language used when no language attribute
-        is specified on a condition or action element.
+        is specified on a condition or action element. The directive is scoped to
+        the XML file that declares it and applies regardless of its position.
     -->
     <element name="scripting">
         <complexType>
@@ -163,7 +164,7 @@
 
         Structure:
           <rulii:rule name="DiscountRule" description="Apply discount for premium orders">
-              <pre-condition script="order != null"/>
+              <pre-condition expr="order != null"/>
               <given>order.customerType == 'PREMIUM'</given>
               <then>order.applyDiscount(0.10)</then>
               <then name="notify">notificationService.send(order)</then>
@@ -272,7 +273,7 @@
         All override attributes are optional — each rule supplies its own defaults:
           errorCode, severity, errorMessage, description
     -->
-    <complexType name="predefinedValidationRuleType" abstract="true">
+    <complexType name="predefinedValidationRuleType" abstract="true" mixed="true">
         <attribute name="name" type="string" use="required"/>
         <attribute name="binding" type="string"/>
         <attribute name="expr" type="string"/>
@@ -600,7 +601,7 @@
         The value to validate is still supplied via binding or expr on the parent element.
     -->
     <element name="startsWith">
-        <complexType>
+        <complexType mixed="true">
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
                     <sequence>
@@ -612,7 +613,7 @@
     </element>
 
     <element name="endsWith">
-        <complexType>
+        <complexType mixed="true">
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
                     <sequence>
@@ -624,7 +625,7 @@
     </element>
 
     <element name="in">
-        <complexType>
+        <complexType mixed="true">
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
                     <sequence>
@@ -654,8 +655,8 @@
                       <given>order.total >= 10</given>
                       <otherwise>throw new ValidationException('Order total too low')</otherwise>
                   </rulii:rule>
-                  <rule-ref beanName="discountRuleBean"/>
-                  <rule-ref className="com.example.rules.TaxRule"/>
+                  <bean-ref name="discountRuleBean"/>
+                  <class-ref class="com.example.rules.TaxRule"/>
               </rules>
 
               <stop-condition>order.isInvalid()</stop-condition>
@@ -671,12 +672,15 @@
           pre-condition  — guard evaluated before any rule is executed;
                            entire ruleset is skipped when this fails
           initializer    — action executed once before rule processing begins
-          rules          — ordered container of inline <rule> elements and
-                           <rule-ref> references to external rules
+          rules          — ordered container of inline <rule>, <validationRule>, and
+                           predefined validator elements, plus <bean-ref> / <class-ref>
+                           references to external rules
           stop-condition — condition evaluated between rules; when true, execution halts
                            before the remaining rules are processed
           finalizer      — action executed once after rule processing completes
                            (even when stopped early by the stop-condition)
+          result-extractor — function producing the ruleset result after execution
+          error-handler    — function invoked when a rule raises an error
     -->
     <element name="ruleset">
         <complexType>

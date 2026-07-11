@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- Items declared but no binding/expr for the value under validation. The child
+         element text ("RED", "BLUE") must NOT be glued together and compiled as the
+         value-source expression; parsing must fail with the binding/expr diagnostic. -->
+    <r:in name="ColorsRule">
+        <r:item>RED</r:item>
+        <r:item>BLUE</r:item>
+    </r:in>
+
+</beans>

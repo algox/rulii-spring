@@ -22,14 +22,10 @@ import org.springframework.beans.factory.config.TypedStringValue;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
-import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,12 +53,10 @@ import java.util.List;
  * @author Max Arulananthan
  * @since 1.0
  */
-class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
 
-    private final RuliiNamespaceHandler handler;
-
-    RuleSetBeanDefinitionParser(RuliiNamespaceHandler handler) {
-        this.handler = handler;
+    RuleSetBeanDefinitionParser() {
+        super();
     }
 
     @Override
@@ -71,18 +65,13 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
     }
 
     @Override
-    protected String resolveId(Element element, AbstractBeanDefinition definition, ParserContext parserContext) {
-        String name = element.getAttribute("name");
-        return StringUtils.hasText(name) ? name : parserContext.getReaderContext().generateBeanName(definition);
-    }
-
-    @Override
     protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 
         builder.addPropertyValue("name", element.getAttribute("name"));
         builder.addPropertyValue("description", element.getAttribute("description"));
-        builder.addPropertyValue("defaultLanguage", handler.getDefaultLanguage());
-        builder.addPropertyValue("validating", element.getAttribute("validating"));
+        builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
+        builder.addPropertyValue("validating",
+                RuliiNamespaceHandler.parseBooleanAttribute(element.getAttribute("validating"), false));
 
         // <param> elements
         List<Element> params = DomUtils.getChildElementsByTagName(element, "param");
@@ -91,7 +80,7 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
             List<RuleSetFactoryBean.InputParameterDefinition> inputParameterDefinitions = new ArrayList<>();
 
             for (Element param : params) {
-                inputParameterDefinitions.add(parseParam(param));
+                inputParameterDefinitions.add(parseParam(param, parserContext));
             }
 
             builder.addPropertyValue("params", inputParameterDefinitions);
@@ -99,11 +88,11 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
 
         // <pre-condition>
         Element preCond = DomUtils.getChildElementByTagName(element, "pre-condition");
-        if (preCond != null) builder.addPropertyValue("preCondition", ScriptExpression.parse(preCond));
+        if (preCond != null) builder.addPropertyValue("preCondition", ScriptExpression.parse(preCond, parserContext));
 
         // <initializer>
         Element init = DomUtils.getChildElementByTagName(element, "initializer");
-        if (init != null) builder.addPropertyValue("initializer", ScriptExpression.parse(init));
+        if (init != null) builder.addPropertyValue("initializer", ScriptExpression.parse(init, parserContext));
 
         // <rules>
         Element rules = DomUtils.getChildElementByTagName(element, "rules");
@@ -115,25 +104,25 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
         // <stop-condition>
         Element stop = DomUtils.getChildElementByTagName(element, "stop-condition");
         if (stop != null) {
-            builder.addPropertyValue("stopCondition", ScriptExpression.parse(stop));
+            builder.addPropertyValue("stopCondition", ScriptExpression.parse(stop, parserContext));
         }
 
         // <finalizer>
         Element finalizer = DomUtils.getChildElementByTagName(element, "finalizer");
         if (finalizer != null) {
-            builder.addPropertyValue("finalizer", ScriptExpression.parse(finalizer));
+            builder.addPropertyValue("finalizer", ScriptExpression.parse(finalizer, parserContext));
         }
 
         // <result-extractor>
         Element resultExtractor = DomUtils.getChildElementByTagName(element, "result-extractor");
         if (resultExtractor != null) {
-            builder.addPropertyValue("resultExtractor", ScriptExpression.parse(resultExtractor));
+            builder.addPropertyValue("resultExtractor", ScriptExpression.parse(resultExtractor, parserContext));
         }
 
-        // <result-extractor>
+        // <error-handler>
         Element errorHandler = DomUtils.getChildElementByTagName(element, "error-handler");
         if (errorHandler != null) {
-            builder.addPropertyValue("errorHandler", ScriptExpression.parse(errorHandler));
+            builder.addPropertyValue("errorHandler", ScriptExpression.parse(errorHandler, parserContext));
         }
     }
 
@@ -141,12 +130,8 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
     private ManagedList<RuntimeBeanReference> parseRules(Element rulesEl, ParserContext parserContext) {
 
         ManagedList<RuntimeBeanReference> refs = new ManagedList<>();
-        NodeList children = rulesEl.getChildNodes();
 
-        for (int i = 0; i < children.getLength(); i++) {
-            Node node = children.item(i);
-            if (!(node instanceof Element child)) continue;
-
+        for (Element child : DomUtils.getChildElements(rulesEl)) {
             String localName = child.getLocalName();
 
             if ("rule".equals(localName)) {
@@ -156,8 +141,7 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
             } else if ("bean-ref".equals(localName)) {
                 refs.add(new RuntimeBeanReference(child.getAttribute("name")));
             } else if ("class-ref".equals(localName)) {
-                RuntimeBeanReference ref = registerClassRef(child, parserContext);
-                if (ref != null) refs.add(ref);
+                refs.add(registerClassRef(child, parserContext));
             } else {
                 // Any other element is treated as an inline predefined validation rule
                 // (notNull, min, pattern, in, etc.) — delegate to the shared populate helper.
@@ -174,65 +158,30 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
      */
     private RuntimeBeanReference registerInlinePredefinedValidationRule(Element el, ParserContext parserContext) {
         BeanDefinitionBuilder rb = BeanDefinitionBuilder.genericBeanDefinition(PredefinedValidationRuleFactoryBean.class);
-        PredefinedValidationRuleBeanDefinitionParser.populate(el, rb, handler.getDefaultLanguage());
-        return registerAndRef(rb.getBeanDefinition(), el.getAttribute("name"), parserContext);
+        PredefinedValidationRuleBeanDefinitionParser.populate(el, rb, parserContext);
+        return registerAndRef(rb.getBeanDefinition(), el.getAttribute("name"), el, parserContext);
     }
 
     /**
-     * Parses an inline {@code <rule>} element, registers it as a sibling bean definition,
-     * and returns a {@link RuntimeBeanReference} to it.
+     * Parses an inline {@code <rule>} element via the shared
+     * {@link RuleBeanDefinitionParser#populate populate} helper, registers it as a sibling
+     * bean definition, and returns a {@link RuntimeBeanReference} to it.
      */
     private RuntimeBeanReference registerInlineRule(Element rule, ParserContext parserContext) {
-
         BeanDefinitionBuilder rb = BeanDefinitionBuilder.genericBeanDefinition(RuleFactoryBean.class);
-
-        rb.addPropertyValue("name", rule.getAttribute("name"));
-        rb.addPropertyValue("description", rule.getAttribute("description"));
-        rb.addPropertyValue("defaultLanguage", handler.getDefaultLanguage());
-
-        Element preCond = DomUtils.getChildElementByTagName(rule, "pre-condition");
-        if (preCond != null) rb.addPropertyValue("preCondition", ScriptExpression.parse(preCond));
-
-        Element given = DomUtils.getChildElementByTagName(rule, "given");
-        if (given != null) rb.addPropertyValue("condition", ScriptExpression.parse(given));
-
-        List<Element> actions = DomUtils.getChildElementsByTagName(rule, "then");
-        if (!actions.isEmpty()) {
-            ManagedList<ScriptExpression> thenActions = new ManagedList<>();
-            actions.forEach(action -> thenActions.add(ScriptExpression.parse(action)));
-            rb.addPropertyValue("thenActions", thenActions);
-        }
-
-        Element otherwise = DomUtils.getChildElementByTagName(rule, "otherwise");
-        if (otherwise != null) rb.addPropertyValue("otherwiseAction", ScriptExpression.parse(otherwise));
-
-        return registerAndRef(rb.getBeanDefinition(), rule.getAttribute("name"), parserContext);
+        RuleBeanDefinitionParser.populate(rule, rb, parserContext);
+        return registerAndRef(rb.getBeanDefinition(), rule.getAttribute("name"), rule, parserContext);
     }
 
     /**
-     * Parses an inline {@code <validationRule>} element, registers it, and returns a reference.
+     * Parses an inline {@code <validationRule>} element via the shared
+     * {@link ValidationRuleBeanDefinitionParser#populate populate} helper, registers it,
+     * and returns a reference.
      */
     private RuntimeBeanReference registerInlineValidationRule(Element el, ParserContext parserContext) {
-
         BeanDefinitionBuilder rb = BeanDefinitionBuilder.genericBeanDefinition(ValidationRuleFactoryBean.class);
-        rb.addPropertyValue("name", el.getAttribute("name"));
-        rb.addPropertyValue("description", el.getAttribute("description"));
-        rb.addPropertyValue("defaultLanguage", handler.getDefaultLanguage());
-
-        String errorCode = el.getAttribute("errorCode");
-        String severity = el.getAttribute("severity");
-        String errorMessage = el.getAttribute("errorMessage");
-        String defaultMessage = el.getAttribute("defaultMessage");
-
-        rb.addPropertyValue("errorCode", errorCode);
-        if (StringUtils.hasText(severity)) rb.addPropertyValue("severity", severity);
-        if (StringUtils.hasText(errorMessage)) rb.addPropertyValue("errorMessage", errorMessage);
-        if (StringUtils.hasText(defaultMessage)) rb.addPropertyValue("defaultMessage", defaultMessage);
-
-        Element condition = DomUtils.getChildElementByTagName(el, "given");
-        if (condition != null) rb.addPropertyValue("condition", ScriptExpression.parse(condition));
-
-        return registerAndRef(rb.getBeanDefinition(), el.getAttribute("name"), parserContext);
+        ValidationRuleBeanDefinitionParser.populate(el, rb, parserContext);
+        return registerAndRef(rb.getBeanDefinition(), el.getAttribute("name"), el, parserContext);
     }
 
     /**
@@ -242,65 +191,66 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
      *
      * <p>Spring handles all type conversion (via {@link TypedStringValue}) and bean wiring
      * (via constructor-arg / property references), so no custom reflection code is needed here.
+     * The class name is stored on the bean definition and resolved lazily by the container's
+     * bean class loader, like any other bean class.
      */
     private RuntimeBeanReference registerClassRef(Element el, ParserContext parserContext) {
-        String className = el.getAttribute("class");
 
-        try {
-            Class<?> ruleClass = ClassUtils.forName(className, Thread.currentThread().getContextClassLoader());
+        // 1. Build a bean definition for the rule class itself.
+        BeanDefinitionBuilder instanceBuilder = BeanDefinitionBuilder.genericBeanDefinition(el.getAttribute("class"));
 
-            // 1. Build a bean definition for the rule class itself.
-            BeanDefinitionBuilder instanceBuilder = BeanDefinitionBuilder.genericBeanDefinition(ruleClass);
-
-            for (Element arg : DomUtils.getChildElementsByTagName(el, "arg")) {
-                String ref   = arg.getAttribute("ref");
-                String value = arg.getAttribute("value");
-                String type  = arg.getAttribute("type");
-                if (StringUtils.hasText(ref)) {
-                    instanceBuilder.addConstructorArgReference(ref);
-                } else {
-                    instanceBuilder.addConstructorArgValue(
-                            StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
-                }
+        for (Element arg : DomUtils.getChildElementsByTagName(el, "arg")) {
+            String ref   = arg.getAttribute("ref");
+            String value = arg.getAttribute("value");
+            String type  = arg.getAttribute("type");
+            if (StringUtils.hasText(ref)) {
+                instanceBuilder.addConstructorArgReference(ref);
+            } else {
+                instanceBuilder.addConstructorArgValue(
+                        StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
             }
-
-            for (Element prop : DomUtils.getChildElementsByTagName(el, "property")) {
-                String name  = prop.getAttribute("name");
-                String ref   = prop.getAttribute("ref");
-                String value = prop.getAttribute("value");
-                String type  = prop.getAttribute("type");
-                if (StringUtils.hasText(ref)) {
-                    instanceBuilder.addPropertyReference(name, ref);
-                } else {
-                    instanceBuilder.addPropertyValue(name,
-                            StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
-                }
-            }
-
-            String instanceBeanName = parserContext.getReaderContext()
-                    .generateBeanName(instanceBuilder.getBeanDefinition());
-            parserContext.getRegistry().registerBeanDefinition(instanceBeanName, instanceBuilder.getBeanDefinition());
-
-            // 2. Wrap the instance in a RuleFromInstanceFactoryBean.
-            BeanDefinitionBuilder wrapperBuilder =
-                    BeanDefinitionBuilder.genericBeanDefinition(RuleFromInstanceFactoryBean.class);
-            wrapperBuilder.addPropertyReference("ruleInstance", instanceBeanName);
-            return registerAndRef(wrapperBuilder.getBeanDefinition(), null, parserContext);
-
-        } catch (ClassNotFoundException e) {
-            parserContext.getReaderContext().error("Cannot find rule class '" + className + "'", el);
-            return null;
         }
+
+        for (Element prop : DomUtils.getChildElementsByTagName(el, "property")) {
+            String name  = prop.getAttribute("name");
+            String ref   = prop.getAttribute("ref");
+            String value = prop.getAttribute("value");
+            String type  = prop.getAttribute("type");
+            if (StringUtils.hasText(ref)) {
+                instanceBuilder.addPropertyReference(name, ref);
+            } else {
+                instanceBuilder.addPropertyValue(name,
+                        StringUtils.hasText(type) ? new TypedStringValue(value, type) : value);
+            }
+        }
+
+        String instanceBeanName = parserContext.getReaderContext()
+                .generateBeanName(instanceBuilder.getBeanDefinition());
+        parserContext.getRegistry().registerBeanDefinition(instanceBeanName, instanceBuilder.getBeanDefinition());
+
+        // 2. Wrap the instance in a RuleFromInstanceFactoryBean.
+        BeanDefinitionBuilder wrapperBuilder =
+                BeanDefinitionBuilder.genericBeanDefinition(RuleFromInstanceFactoryBean.class);
+        wrapperBuilder.addPropertyReference("ruleInstance", instanceBeanName);
+        return registerAndRef(wrapperBuilder.getBeanDefinition(), null, el, parserContext);
     }
 
     /**
      * Registers a bean definition and returns a {@link RuntimeBeanReference} to it.
      * Uses the provided {@code name} when non-blank, otherwise generates a unique name.
+     *
+     * <p>An explicit name that is already registered is reported as a parse error (with the
+     * source XML location) rather than silently reusing the existing bean — sharing a rule
+     * across rulesets is done with {@code <bean-ref>}, never by name collision.
      */
-    private RuntimeBeanReference registerAndRef(AbstractBeanDefinition def, String name, ParserContext parserContext) {
-        String beanName = StringUtils.hasText(name) ? name : parserContext.getReaderContext().generateBeanName(def);
+    private RuntimeBeanReference registerAndRef(AbstractBeanDefinition def, String name, Element source, ParserContext parserContext) {
+        String beanName = resolveBeanName(name, def, parserContext);
 
-        if (!parserContext.getRegistry().containsBeanDefinition(beanName)) {
+        if (parserContext.getRegistry().containsBeanDefinition(beanName)) {
+            parserContext.getReaderContext().error("Duplicate rule bean name [" + beanName
+                    + "]: a bean definition with this name already exists."
+                    + " Use a unique name, or reference the existing rule with <bean-ref name=\"" + beanName + "\"/>.", source);
+        } else {
             parserContext.getRegistry().registerBeanDefinition(beanName, def);
         }
 
@@ -308,15 +258,14 @@ class RuleSetBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
     }
 
     /** Parses a {@code <param>} element into a {@link RuleSetFactoryBean.InputParameterDefinition}. */
-    private RuleSetFactoryBean.InputParameterDefinition parseParam(Element el) {
+    private RuleSetFactoryBean.InputParameterDefinition parseParam(Element el, ParserContext parserContext) {
         String paramName = el.getAttribute("name");
         String type = el.getAttribute("type");
-        String requiredAttr = el.getAttribute("required");
-        boolean required = !StringUtils.hasText(requiredAttr) || Boolean.parseBoolean(requiredAttr);
+        boolean required = RuliiNamespaceHandler.parseBooleanAttribute(el.getAttribute("required"), true);
 
         ScriptExpression defaultValueExpr = null;
         Element defaultValue = DomUtils.getChildElementByTagName(el, "default-value");
-        if (defaultValue != null) defaultValueExpr = ScriptExpression.parse(defaultValue);
+        if (defaultValue != null) defaultValueExpr = ScriptExpression.parse(defaultValue, parserContext);
 
         return new RuleSetFactoryBean.InputParameterDefinition(paramName, type, required, defaultValueExpr);
     }

@@ -17,13 +17,9 @@
  */
 package org.rulii.spring.xml;
 
-import org.rulii.model.action.Action;
-import org.rulii.model.condition.Condition;
-import org.rulii.model.function.Function;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.ruleset.RuleSetBuilder;
-import org.rulii.script.Script;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -63,7 +59,9 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     private RuleSet<?> ruleSet;
 
-    public RuleSetFactoryBean() {}
+    public RuleSetFactoryBean() {
+        super();
+    }
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -74,7 +72,7 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
             Class type = ClassUtils.forName(inputParameter.getType(), Thread.currentThread().getContextClassLoader());
 
             if (inputParameter.getDefaultValueExpression() != null) {
-                builder.param(inputParameter.getName(), type, buildFunction(inputParameter.defaultValueExpression));
+                builder.param(inputParameter.getName(), type, inputParameter.getDefaultValueExpression().toFunction(defaultLanguage));
             } else {
                 builder.param(inputParameter.getName(), type, inputParameter.isRequired());
             }
@@ -82,38 +80,23 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
         if (validating) builder.validating();
 
-        if (preCondition != null) builder.preCondition(buildCondition(preCondition));
+        if (preCondition != null) builder.preCondition(preCondition.toCondition(defaultLanguage));
 
-        if (initializer != null) builder.initializer(buildAction(initializer));
+        if (initializer != null) builder.initializer(initializer.toAction(defaultLanguage));
 
         if (rules != null) {
             rules.forEach(builder::rule);
         }
 
-        if (stopCondition != null) builder.stopCondition(buildCondition(stopCondition));
+        if (stopCondition != null) builder.stopCondition(stopCondition.toCondition(defaultLanguage));
 
-        if (finalizer != null) builder.finalizer(buildAction(finalizer));
+        if (finalizer != null) builder.finalizer(finalizer.toAction(defaultLanguage));
 
-        if (resultExtractor != null) builder.resultExtractor(buildFunction(resultExtractor));
+        if (resultExtractor != null) builder.resultExtractor(resultExtractor.toFunction(defaultLanguage));
 
-        if (errorHandler != null) builder.errorHandler(buildFunction(errorHandler));
+        if (errorHandler != null) builder.errorHandler(errorHandler.toFunction(defaultLanguage));
 
         ruleSet = builder.build();
-    }
-
-    private Condition buildCondition(ScriptExpression expr) {
-        Script<?> script = Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression());
-        return Condition.builder().build(script);
-    }
-
-    private Action buildAction(ScriptExpression expr) {
-        Script<?> script = Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression());
-        return Action.builder().build(script);
-    }
-
-    private Function<?> buildFunction(ScriptExpression expr) {
-        Script<?> script = Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression());
-        return Function.builder().build(script);
     }
 
     @Override

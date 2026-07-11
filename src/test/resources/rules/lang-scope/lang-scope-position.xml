@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- The scripting directive appears AFTER the rule. It must still apply to the
+         whole document: building PositionRule must fail under "bogusLang" instead
+         of silently compiling under "el". -->
+    <r:rule name="PositionRule" description="Declared before the scripting directive">
+        <r:given>#ctx.age >= 18</r:given>
+    </r:rule>
+
+    <r:scripting defaultLanguage="bogusLang"/>
+
+</beans>

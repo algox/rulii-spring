@@ -39,7 +39,9 @@ class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean
     private Object ruleInstance;
     private Rule rule;
 
-    RuleFromInstanceFactoryBean() {}
+    RuleFromInstanceFactoryBean() {
+        super();
+    }
 
     @Override
     public void afterPropertiesSet() {

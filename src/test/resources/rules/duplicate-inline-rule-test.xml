@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- ======================================================
+         Two rulesets that each declare an inline rule with the
+         SAME name but different logic. Loading this file must
+         fail fast with a duplicate-name parse error instead of
+         silently running FirstRuleSet's rule inside SecondRuleSet.
+    ====================================================== -->
+
+    <r:ruleset name="FirstRuleSet" description="Declares the original DuplicateInlineRule">
+        <r:rules>
+            <r:rule name="DuplicateInlineRule" description="Passes when age >= 18">
+                <r:given>#ctx.age >= 18</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
+
+    <r:ruleset name="SecondRuleSet" description="Collides with FirstRuleSet's inline rule name">
+        <r:rules>
+            <r:rule name="DuplicateInlineRule" description="Different logic under the same name">
+                <r:given>#ctx.age >= 21</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
+
+</beans>

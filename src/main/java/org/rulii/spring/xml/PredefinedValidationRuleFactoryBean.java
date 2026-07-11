@@ -20,7 +20,6 @@ package org.rulii.spring.xml;
 import org.rulii.model.UnrulyException;
 import org.rulii.model.function.Function;
 import org.rulii.rule.Rule;
-import org.rulii.script.Script;
 import org.rulii.validation.Severity;
 import org.rulii.validation.ValueValidationRuleBuilder;
 import org.rulii.validation.rules.Validators;
@@ -31,6 +30,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Spring {@link FactoryBean} that constructs a predefined validation {@link Rule} from one of
@@ -47,6 +47,32 @@ import java.util.List;
  * @since 1.0
  */
 public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
+
+    /**
+     * All predefined validator element names, in registration order. This is the single
+     * Java-side source of truth: {@link RuliiNamespaceHandler} registers a parser for each
+     * entry, and {@code buildRuleBuilder}'s switch must cover every entry (guarded by
+     * {@code PredefinedValidatorTypesTest}). The XSD declares the same elements.
+     */
+    public static final List<String> TYPES = List.of(
+            // No extra parameters
+            "notNull", "notBlank", "notEmpty", "isNull", "blank",
+            "alpha", "alphaNumeric", "ascii", "decimal", "numeric",
+            "email", "url", "lowerCase", "upperCase",
+            "assertFalse", "assertTrue",
+            "positive", "positiveOrZero", "negative", "negativeOrZero",
+            "future", "futureOrPresent", "past", "pastOrPresent",
+            "fileExists",
+            // Numeric bounds
+            "min", "max", "decimalMin", "decimalMax",
+            // Size / digits
+            "size", "digits",
+            // Pattern
+            "pattern",
+            // Equality
+            "assertEquals", "assertNotEquals",
+            // Multi-value
+            "startsWith", "endsWith", "in");
 
     private String type;
     private String name;
@@ -79,7 +105,9 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
 
     private Rule rule;
 
-    public PredefinedValidationRuleFactoryBean() {}
+    public PredefinedValidationRuleFactoryBean() {
+        super();
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -92,7 +120,7 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
         vb.name(name).description(description);
 
         if (StringUtils.hasText(errorCode)) vb.errorCode(errorCode);
-        if (StringUtils.hasText(severity)) vb.severity(Severity.valueOf(severity.toUpperCase()));
+        if (StringUtils.hasText(severity)) vb.severity(Severity.valueOf(severity.toUpperCase(Locale.ROOT)));
         if (StringUtils.hasText(errorMessage)) vb.message(errorMessage);
 
         rule = vb.build();
@@ -103,14 +131,9 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
             return Validators.binding(valueSource.getBindingName());
         }
 
-        ScriptExpression script = valueSource.getScript();
-        if (script == null || script.getExpression() == null) {
-            throw new UnrulyException("Predefined validation rule '" + name
-                    + "': must supply either a binding attribute or a script expression (expr attribute or element body).");
-        }
-
-        return Function.builder().build(
-                Script.builder().build(script.resolveLanguage(defaultLanguage), script.getExpression()));
+        // ValueSource guarantees a non-null script with a non-null expression when not a binding;
+        // a missing value source is reported at XML parse time with the source location.
+        return valueSource.getScript().toFunction(defaultLanguage);
     }
 
     @SuppressWarnings("unchecked")

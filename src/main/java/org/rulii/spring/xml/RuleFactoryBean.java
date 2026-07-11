@@ -17,11 +17,7 @@
  */
 package org.rulii.spring.xml;
 
-import org.rulii.model.action.Action;
-import org.rulii.model.condition.Condition;
 import org.rulii.rule.Rule;
-import org.rulii.script.Script;
-import org.rulii.script.ScriptProcessorManager;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -32,9 +28,8 @@ import java.util.List;
  * Spring {@link FactoryBean} that constructs a {@link Rule} from script-based conditions
  * and actions declared in a {@code <rulii:rule>} XML element.
  *
- * <p>Scripts are compiled via the Spring-managed {@link ScriptProcessorManager} bean
- * (injected as a dependency) and wrapped using the standard rulii
- * {@code Condition.builder().build(script)} / {@code Action.builder().build(script)} API.
+ * <p>Scripts are compiled through the standard rulii {@code Script.builder()} pipeline via
+ * {@link ScriptExpression#toCondition} / {@link ScriptExpression#toAction}.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -52,33 +47,25 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
 
     private Rule rule;
 
-    public RuleFactoryBean() {}
+    public RuleFactoryBean() {
+        super();
+    }
 
     @Override
     public void afterPropertiesSet() {
         var builder = Rule.builder().name(name, description);
 
-        if (preCondition != null) builder.preCondition(buildCondition(preCondition));
+        if (preCondition != null) builder.preCondition(preCondition.toCondition(defaultLanguage));
 
-        if (condition != null) builder.given(buildCondition(condition));
+        if (condition != null) builder.given(condition.toCondition(defaultLanguage));
 
         for (ScriptExpression expr : thenActions) {
-            builder.then(buildAction(expr));
+            builder.then(expr.toAction(defaultLanguage));
         }
 
-        if (otherwiseAction != null) builder.otherwise(buildAction(otherwiseAction));
+        if (otherwiseAction != null) builder.otherwise(otherwiseAction.toAction(defaultLanguage));
 
         rule = builder.build();
-    }
-
-    private Condition buildCondition(ScriptExpression expr) {
-        return Condition.builder().build(
-                Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression()));
-    }
-
-    private Action buildAction(ScriptExpression expr) {
-        return Action.builder().build(
-                Script.builder().build(expr.resolveLanguage(defaultLanguage), expr.getExpression()));
     }
 
     @Override

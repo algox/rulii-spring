@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- No <r:scripting> element: this rule expects the documented default "el",
+         regardless of what other files loaded by the same reader declare. -->
+    <r:rule name="LangScopeRule" description="Passes when age >= 18">
+        <r:given>#ctx.age >= 18</r:given>
+    </r:rule>
+
+</beans>

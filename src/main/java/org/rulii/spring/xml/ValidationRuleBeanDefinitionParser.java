@@ -17,9 +17,7 @@
  */
 package org.rulii.spring.xml;
 
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
@@ -44,12 +42,10 @@ import org.w3c.dom.Element;
  * @author Max Arulananthan
  * @since 1.0
  */
-class ValidationRuleBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+class ValidationRuleBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
 
-    private final RuliiNamespaceHandler handler;
-
-    ValidationRuleBeanDefinitionParser(RuliiNamespaceHandler handler) {
-        this.handler = handler;
+    ValidationRuleBeanDefinitionParser() {
+        super();
     }
 
     @Override
@@ -58,18 +54,25 @@ class ValidationRuleBeanDefinitionParser extends AbstractSingleBeanDefinitionPar
     }
 
     @Override
-    protected String resolveId(Element element, AbstractBeanDefinition definition, ParserContext parserContext) {
-        String name = element.getAttribute("name");
-        if (StringUtils.hasText(name)) return name;
-        return parserContext.getReaderContext().generateBeanName(definition);
+    protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+        populate(element, builder, parserContext);
     }
 
-    @Override
-    protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+    /**
+     * Populates a {@link BeanDefinitionBuilder} for {@link ValidationRuleFactoryBean} from
+     * the given {@code <validationRule>} element. Called both by this parser and by
+     * {@link RuleSetBeanDefinitionParser} when processing inline validation rules inside a
+     * {@code <rulii:rules>} block, so both declaration styles always parse identically.
+     *
+     * @param element       the {@code <validationRule>} element
+     * @param builder       the builder to populate
+     * @param parserContext the parser context used for error reporting
+     */
+    static void populate(Element element, BeanDefinitionBuilder builder, ParserContext parserContext) {
 
         builder.addPropertyValue("name", element.getAttribute("name"));
         builder.addPropertyValue("description", element.getAttribute("description"));
-        builder.addPropertyValue("defaultLanguage", handler.getDefaultLanguage());
+        builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
 
         String errorCode = element.getAttribute("errorCode");
         String severity = element.getAttribute("severity");
@@ -83,6 +86,6 @@ class ValidationRuleBeanDefinitionParser extends AbstractSingleBeanDefinitionPar
 
         Element given = DomUtils.getChildElementByTagName(element, "given");
 
-        if (given != null) builder.addPropertyValue("condition", ScriptExpression.parse(given));
+        if (given != null) builder.addPropertyValue("condition", ScriptExpression.parse(given, parserContext));
     }
 }

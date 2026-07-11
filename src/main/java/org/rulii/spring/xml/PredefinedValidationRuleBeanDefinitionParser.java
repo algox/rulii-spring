@@ -17,9 +17,7 @@
  */
 package org.rulii.spring.xml;
 
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
@@ -47,12 +45,10 @@ import java.util.List;
  * @author Max Arulananthan
  * @since 1.0
  */
-class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
+class PredefinedValidationRuleBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
 
-    private final RuliiNamespaceHandler handler;
-
-    PredefinedValidationRuleBeanDefinitionParser(RuliiNamespaceHandler handler) {
-        this.handler = handler;
+    PredefinedValidationRuleBeanDefinitionParser() {
+        super();
     }
 
     @Override
@@ -61,15 +57,8 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDef
     }
 
     @Override
-    protected String resolveId(Element element, AbstractBeanDefinition definition, ParserContext parserContext) {
-        String name = element.getAttribute("name");
-        if (StringUtils.hasText(name)) return name;
-        return parserContext.getReaderContext().generateBeanName(definition);
-    }
-
-    @Override
     protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
-        populate(element, builder, handler.getDefaultLanguage());
+        populate(element, builder, parserContext);
     }
 
     /**
@@ -78,17 +67,17 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDef
      * {@link RuleSetBeanDefinitionParser} when processing inline predefined rules inside
      * a {@code <rulii:rules>} block.
      *
-     * @param element         the predefined rule element (e.g. {@code <rulii:notNull>})
-     * @param builder         the builder to populate
-     * @param defaultLanguage the default scripting language from the namespace handler
+     * @param element       the predefined rule element (e.g. {@code <rulii:notNull>})
+     * @param builder       the builder to populate
+     * @param parserContext the parser context used for error reporting
      */
-    static void populate(Element element, BeanDefinitionBuilder builder, String defaultLanguage) {
+    static void populate(Element element, BeanDefinitionBuilder builder, ParserContext parserContext) {
         String type = element.getLocalName();
 
         builder.addPropertyValue("type", type);
         builder.addPropertyValue("name", element.getAttribute("name"));
-        builder.addPropertyValue("defaultLanguage", defaultLanguage);
-        builder.addPropertyValue("valueSource", ValueSource.parse(element));
+        builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
+        builder.addPropertyValue("valueSource", ValueSource.parse(element, parserContext));
 
         String description = element.getAttribute("description");
         String errorCode = element.getAttribute("errorCode");
@@ -119,8 +108,8 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractSingleBeanDef
             }
             case "pattern" -> {
                 builder.addPropertyValue("pattern", element.getAttribute("pattern"));
-                String cs = element.getAttribute("caseSensitive");
-                builder.addPropertyValue("caseSensitive", !StringUtils.hasText(cs) || Boolean.parseBoolean(cs));
+                builder.addPropertyValue("caseSensitive",
+                        RuliiNamespaceHandler.parseBooleanAttribute(element.getAttribute("caseSensitive"), true));
             }
             case "assertEquals", "assertNotEquals" ->
                 builder.addPropertyValue("value", element.getAttribute("value"));

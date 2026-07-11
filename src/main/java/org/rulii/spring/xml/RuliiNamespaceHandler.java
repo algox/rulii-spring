@@ -18,78 +18,66 @@
 package org.rulii.spring.xml;
 
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
-import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
 
-    /** Default scripting language used when an expression element carries no {@code language} attribute. */
-    private String defaultLanguage = "el";
+    /** The rulii namespace URI. */
+    static final String NAMESPACE_URI = "http://www.rulii.org/schema/rulii";
+
+    /** Default scripting language used when neither the element nor {@code <scripting>} specifies one. */
+    static final String DEFAULT_LANGUAGE = "el";
+
+    /**
+     * Resolves the default scripting language for the document containing the given element.
+     *
+     * <p>The {@code <scripting defaultLanguage="...">} directive is read declaratively: it is
+     * scoped to the XML file that declares it (never leaking into other files parsed by the
+     * same reader) and applies regardless of its position within the file. When a file
+     * contains multiple {@code <scripting>} elements, the first one wins.
+     *
+     * @param element any element of the document being parsed
+     * @return the declared default language, or {@link #DEFAULT_LANGUAGE} if none is declared
+     */
+    static String getDefaultLanguage(Element element) {
+        NodeList list = element.getOwnerDocument().getElementsByTagNameNS(NAMESPACE_URI, "scripting");
+
+        if (list.getLength() > 0) {
+            String language = ((Element) list.item(0)).getAttribute("defaultLanguage");
+            if (StringUtils.hasText(language)) return language;
+        }
+
+        return DEFAULT_LANGUAGE;
+    }
+
+    /**
+     * Parses an {@code xs:boolean} attribute value. Unlike {@link Boolean#parseBoolean},
+     * this honors the full XML Schema lexical space: {@code "true"} and {@code "1"} are
+     * true; {@code "false"} and {@code "0"} are false.
+     *
+     * @param value        the raw attribute value; may be null or blank
+     * @param defaultValue the value to return when the attribute is absent or blank
+     * @return the parsed boolean
+     */
+    static boolean parseBooleanAttribute(String value, boolean defaultValue) {
+        if (!StringUtils.hasText(value)) return defaultValue;
+
+        String v = value.strip();
+        return "true".equals(v) || "1".equals(v);
+    }
 
     @Override
     public void init() {
-        registerBeanDefinitionParser("scripting", new ScriptingBeanDefinitionParser(this));
-        registerBeanDefinitionParser("rule", new RuleBeanDefinitionParser(this));
-        registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser(this));
-        registerBeanDefinitionParser("ruleset", new RuleSetBeanDefinitionParser(this));
+        registerBeanDefinitionParser("scripting", new ScriptingBeanDefinitionParser());
+        registerBeanDefinitionParser("rule", new RuleBeanDefinitionParser());
+        registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser());
+        registerBeanDefinitionParser("ruleset", new RuleSetBeanDefinitionParser());
 
-        PredefinedValidationRuleBeanDefinitionParser predefined = new PredefinedValidationRuleBeanDefinitionParser(this);
-
-        // No extra parameters
-        registerBeanDefinitionParser("notNull", predefined);
-        registerBeanDefinitionParser("notBlank", predefined);
-        registerBeanDefinitionParser("notEmpty", predefined);
-        registerBeanDefinitionParser("isNull", predefined);
-        registerBeanDefinitionParser("blank", predefined);
-        registerBeanDefinitionParser("alpha", predefined);
-        registerBeanDefinitionParser("alphaNumeric", predefined);
-        registerBeanDefinitionParser("ascii", predefined);
-        registerBeanDefinitionParser("decimal", predefined);
-        registerBeanDefinitionParser("numeric", predefined);
-        registerBeanDefinitionParser("email", predefined);
-        registerBeanDefinitionParser("url", predefined);
-        registerBeanDefinitionParser("lowerCase", predefined);
-        registerBeanDefinitionParser("upperCase", predefined);
-        registerBeanDefinitionParser("assertFalse", predefined);
-        registerBeanDefinitionParser("assertTrue", predefined);
-        registerBeanDefinitionParser("positive", predefined);
-        registerBeanDefinitionParser("positiveOrZero", predefined);
-        registerBeanDefinitionParser("negative", predefined);
-        registerBeanDefinitionParser("negativeOrZero", predefined);
-        registerBeanDefinitionParser("future", predefined);
-        registerBeanDefinitionParser("futureOrPresent", predefined);
-        registerBeanDefinitionParser("past", predefined);
-        registerBeanDefinitionParser("pastOrPresent", predefined);
-        registerBeanDefinitionParser("fileExists", predefined);
-
-        // Numeric bounds
-        registerBeanDefinitionParser("min", predefined);
-        registerBeanDefinitionParser("max", predefined);
-        registerBeanDefinitionParser("decimalMin", predefined);
-        registerBeanDefinitionParser("decimalMax", predefined);
-
-        // Size / digits
-        registerBeanDefinitionParser("size", predefined);
-        registerBeanDefinitionParser("digits", predefined);
-
-        // Pattern
-        registerBeanDefinitionParser("pattern", predefined);
-
-        // Equality
-        registerBeanDefinitionParser("assertEquals", predefined);
-        registerBeanDefinitionParser("assertNotEquals", predefined);
-
-        // Multi-value
-        registerBeanDefinitionParser("startsWith", predefined);
-        registerBeanDefinitionParser("endsWith", predefined);
-        registerBeanDefinitionParser("in", predefined);
-    }
-
-    public String getDefaultLanguage() {
-        return defaultLanguage;
-    }
-
-    public void setDefaultLanguage(String defaultLanguage) {
-        Assert.hasText(defaultLanguage, "defaultLanguage cannot be null or empty.");
-        this.defaultLanguage = defaultLanguage;
+        // One shared parser handles every predefined validator element; the element list
+        // lives next to the dispatch switch it must stay in sync with.
+        PredefinedValidationRuleBeanDefinitionParser predefined = new PredefinedValidationRuleBeanDefinitionParser();
+        PredefinedValidationRuleFactoryBean.TYPES.forEach(type -> registerBeanDefinitionParser(type, predefined));
     }
 }

@@ -20,34 +20,28 @@ package org.rulii.spring.xml;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
-import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 
 /**
- * Parses a {@code <rulii:scripting>} element and updates the {@link RuliiNamespaceHandler}'s
- * {@code defaultLanguage}. This element does not register a Spring bean; it is purely a
- * namespace-level configuration directive.
+ * Parser for the {@code <rulii:scripting>} element. The element registers no Spring bean
+ * and carries no parse-time behavior: it is a purely declarative, file-scoped directive
+ * read by the other parsers via {@link RuliiNamespaceHandler#getDefaultLanguage(Element)}.
  *
- * <p>Must appear before any {@code <rulii:rule>} or {@code <rulii:ruleset>} elements to
- * ensure the default language is applied to all subsequent expression elements.
+ * <p>Because the directive is looked up from the document rather than applied while
+ * parsing, it takes effect regardless of its position in the file, and it never affects
+ * other XML files parsed by the same reader.
  *
  * @author Max Arulananthan
  * @since 1.0
  */
 class ScriptingBeanDefinitionParser implements BeanDefinitionParser {
 
-    private final RuliiNamespaceHandler handler;
-
-    ScriptingBeanDefinitionParser(RuliiNamespaceHandler handler) {
-        this.handler = handler;
+    ScriptingBeanDefinitionParser() {
+        super();
     }
 
     @Override
     public BeanDefinition parse(Element element, ParserContext parserContext) {
-        String defaultLanguage = element.getAttribute("defaultLanguage");
-        if (StringUtils.hasText(defaultLanguage)) {
-            handler.setDefaultLanguage(defaultLanguage);
-        }
         return null;
     }
 }

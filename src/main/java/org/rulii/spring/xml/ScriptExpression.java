@@ -17,8 +17,14 @@
  */
 package org.rulii.spring.xml;
 
+import org.rulii.model.action.Action;
+import org.rulii.model.condition.Condition;
+import org.rulii.model.function.Function;
+import org.rulii.script.Script;
+import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 /**
@@ -28,8 +34,8 @@ import org.w3c.dom.Element;
  * bean initialisation.
  *
  * <p>The expression text may come from either the {@code expr} attribute or the element's
- * text content, whichever is non-blank. The {@link #resolveLanguage(String)} helper falls
- * back to the supplied default when no explicit language is set.
+ * direct text content, whichever is non-blank. The {@link #resolveLanguage(String)} helper
+ * falls back to the supplied default when no explicit language is set.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -49,7 +55,7 @@ public class ScriptExpression {
     /** Explicit scripting-language name, or {@code null} if the default should be used. */
     public String getLanguage() { return language; }
 
-    /** Raw expression text — may be null if the element carried no body or {@code expr} attribute. */
+    /** Raw expression text; never null. */
     public String getExpression() { return expression; }
 
     /**
@@ -60,19 +66,79 @@ public class ScriptExpression {
         return (language != null && !language.isBlank()) ? language : defaultLanguage;
     }
 
-    /** Build a {@link ScriptExpression} from a condition/action child element. */
-    static ScriptExpression parse(Element element) {
+    /**
+     * Compiles this expression into a boolean {@link Condition}.
+     *
+     * @param defaultLanguage the language used when this expression declares none
+     * @return the compiled condition
+     */
+    public Condition toCondition(String defaultLanguage) {
+        return Condition.builder().build(toScript(defaultLanguage));
+    }
+
+    /**
+     * Compiles this expression into a side-effect {@link Action}.
+     *
+     * @param defaultLanguage the language used when this expression declares none
+     * @return the compiled action
+     */
+    public Action toAction(String defaultLanguage) {
+        return Action.builder().build(toScript(defaultLanguage));
+    }
+
+    /**
+     * Compiles this expression into a value-producing {@link Function}.
+     *
+     * @param defaultLanguage the language used when this expression declares none
+     * @return the compiled function
+     */
+    public Function<?> toFunction(String defaultLanguage) {
+        return Function.builder().build(toScript(defaultLanguage));
+    }
+
+    private Script<?> toScript(String defaultLanguage) {
+        return Script.builder().build(resolveLanguage(defaultLanguage), expression);
+    }
+
+    /**
+     * Builds a {@link ScriptExpression} from an expression-bearing element, reporting a
+     * parse error (with the XML source location) when the element carries no expression.
+     *
+     * @param element       the condition/action/function element
+     * @param parserContext the parser context used for error reporting
+     * @return the parsed expression; never null on the fail-fast error reporter
+     */
+    static ScriptExpression parse(Element element, ParserContext parserContext) {
+        ScriptExpression result = tryParse(element);
+
+        if (result == null) {
+            parserContext.getReaderContext().error("<" + element.getLocalName()
+                    + "> must provide a script expression (expr attribute or element body).", element);
+        }
+
+        return result;
+    }
+
+    /**
+     * Builds a {@link ScriptExpression} from an expression-bearing element, or returns
+     * {@code null} when the element has neither an {@code expr} attribute nor a non-blank
+     * direct text body. Only direct text/CDATA children count as the body — text inside
+     * child elements (e.g. {@code <item>}) is never treated as an expression.
+     *
+     * @param element the element to read the expression from
+     * @return the parsed expression, or {@code null} if none is present
+     */
+    static ScriptExpression tryParse(Element element) {
         String expr = element.getAttribute("expr");
 
         if (!StringUtils.hasText(expr)) {
-            expr = element.getTextContent();
-            if (expr != null) expr = expr.strip();
+            expr = DomUtils.getTextValue(element).strip();
         }
 
+        if (!StringUtils.hasText(expr)) return null;
+
         String language = element.getAttribute("language");
-        return new ScriptExpression(
-                StringUtils.hasText(language) ? language : null,
-                StringUtils.hasText(expr) ? expr : null);
+        return new ScriptExpression(StringUtils.hasText(language) ? language : null, expr);
     }
 
     @Override

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- xs:boolean allows the literals 1/0 in addition to true/false. These must be
+         honored: caseSensitive="1" means case-SENSITIVE, required="1" means REQUIRED. -->
+
+    <r:pattern name="StrictCodeRule"
+               binding="code"
+               pattern="[a-z]+"
+               caseSensitive="1"/>
+
+    <r:ruleset name="RequiredParamRuleSet" description="Declares a required param via 1" validating="1">
+        <r:param name="amount" type="java.lang.Integer" required="1"/>
+        <r:rules>
+            <r:rule name="AlwaysPassRule">
+                <r:given>1 == 1</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
+
+</beans>
