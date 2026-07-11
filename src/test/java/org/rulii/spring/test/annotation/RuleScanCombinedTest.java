@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -172,14 +171,14 @@ class RuleScanCombinedTest {
     @Test
     void metaInfoCapturesScanBasePackage() {
         assertNotNull(metaInfo.rulePackages());
-        assertTrue(Arrays.asList(metaInfo.rulePackages()).contains("org.rulii.spring.test.rules.xmlscan"),
+        assertTrue(metaInfo.rulePackages().contains("org.rulii.spring.test.rules.xmlscan"),
                 "rulePackages should contain the declared scan package");
     }
 
     @Test
     void metaInfoCapturesXmlLocation() {
         assertNotNull(metaInfo.xmlLocations());
-        assertTrue(Arrays.asList(metaInfo.xmlLocations()).contains("classpath:rules/xml-scan/"),
+        assertTrue(metaInfo.xmlLocations().contains("classpath:rules/xml-scan/"),
                 "xmlLocations should contain the declared folder");
     }
 

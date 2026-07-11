@@ -59,6 +59,12 @@ public final class BeanNames {
     /** Bean name for the {@link java.util.concurrent.ExecutorService} bean. */
     public static final String EXECUTOR_SERVICE             = "rulii.executorService";
 
+    /** Bean name for the internal marker bean registered once {@code @RuleScan} has been processed. */
+    public static final String RULE_SCAN_MARKER             = "rulii.ruleScanMarker";
+
+    /** Bean name for the {@link RuleRegistrarMetaInfo} bean registered by the auto-scan fallback. */
+    public static final String RULE_SCAN_META_INFO          = "rulii.ruleScanMetaInfo";
+
     private BeanNames() {
         super();
     }

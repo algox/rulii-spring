@@ -18,67 +18,35 @@
 package org.rulii.spring.config;
 
 import org.rulii.annotation.Rule;
-import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
- * RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner to scan for classes
- * annotated with @Rule in the specified base packages and register them in the Spring
- * application context.
+ * RuleBeanDefinitionScanner scans the classpath for classes annotated with {@link Rule}
+ * so they can be registered in the Spring application context.
+ *
+ * <p>It runs against the running application's {@link Environment} and
+ * {@link ResourceLoader}, so {@code @Profile} / {@code @Conditional} declarations on
+ * rule classes are honored and no throwaway application context is created.
  *
  * @author Max Arulananthan
  * @since 1.0
  *
  */
-class RuleBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
-
-    private boolean ruleScanStarted = false;
-    private final List<BeanDefinitionHolder> ruleBeans = new LinkedList<>();
+class RuleBeanDefinitionScanner extends ClassPathScanningCandidateComponentProvider {
 
     /**
      * Constructs a new {@code RuleBeanDefinitionScanner} configured to include only
      * classes annotated with {@link Rule}.
+     *
+     * @param environment    the environment used to evaluate {@code @Profile} / {@code @Conditional}
+     * @param resourceLoader the resource loader used to locate candidate classes
      */
-    RuleBeanDefinitionScanner() {
-        super(new AnnotationConfigApplicationContext(), false);
+    RuleBeanDefinitionScanner(Environment environment, ResourceLoader resourceLoader) {
+        super(false, environment);
+        if (resourceLoader != null) setResourceLoader(resourceLoader);
         addIncludeFilter(new AnnotationTypeFilter(Rule.class));
-    }
-
-    /**
-     * Scans for rules in the specified base packages and registers them in the Spring application context.
-     *
-     * @param basePackages an array of strings representing the base packages to scan for rule classes
-     */
-    void scanForRules(String...basePackages) {
-        this.ruleScanStarted = true;
-        scan(basePackages);
-    }
-
-    /**
-     * Intercepts Spring's normal registration path and collects discovered rule bean definitions
-     * into an internal list instead of registering them in the registry directly.
-     * Accumulation only occurs after {@link #scanForRules(String...)} has been called.
-     *
-     * @param definitionHolder the holder containing the bean definition and its name
-     * @param registry         the registry (unused; beans are buffered for external registration)
-     */
-    @Override
-    protected void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) {
-        if (ruleScanStarted) ruleBeans.add(definitionHolder);
-    }
-
-    /**
-     * Retrieve a list of BeanDefinitionHolders that represent rule beans.
-     *
-     * @return a List of BeanDefinitionHolders containing information about rule beans
-     */
-    public List<BeanDefinitionHolder> getRuleBeans() {
-        return ruleBeans;
     }
 }

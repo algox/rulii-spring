@@ -26,6 +26,16 @@ import java.lang.annotation.*;
  * Annotation used to enable scanning for rule classes in specified base packages.
  * Rules found during scanning will be registered in the Spring application context.
  *
+ * <p>The scan runs in one of three modes, depending on which attributes are set:
+ * <ul>
+ *   <li><b>Neither attribute</b> — the package of the annotated class is scanned for
+ *       {@code @Rule} classes (mirroring {@code @ComponentScan} semantics)</li>
+ *   <li><b>{@link #scanBasePackages()}</b> — the declared packages are scanned;
+ *       any {@link #xmlLocations()} are loaded afterwards</li>
+ *   <li><b>{@link #xmlLocations()} only</b> — XML-only: the declared locations are
+ *       loaded and <em>no</em> class scanning is performed</li>
+ * </ul>
+ *
  * @author Max Arulananthan
  * @since 1.0
  *
@@ -44,17 +54,29 @@ public @interface RuleScan {
     String[] scanBasePackages() default {};
 
     /**
-     * Resource folders containing Spring XML context files that declare
-     * rulii rules and rulesets (e.g. {@code "classpath:rules/pricing/"}).
+     * Resource locations of Spring XML context files that declare rulii rules
+     * and rulesets. Each entry may take one of three forms:
      *
-     * <p>Each entry is treated as a folder: all {@code *.xml} files directly inside
-     * it are loaded via {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader}
+     * <ul>
+     *   <li><b>Folder</b> (e.g. {@code "classpath:rules/pricing/"}) — all {@code *.xml}
+     *       files directly inside it are loaded; a {@code classpath:} prefix is upgraded
+     *       to {@code classpath*:} so all classpath roots (e.g. rule sets shipped in
+     *       separate jars) are searched</li>
+     *   <li><b>File</b> (e.g. {@code "classpath:rules/pricing/pricing-rules.xml"}) —
+     *       that file is loaded; startup fails if it does not exist</li>
+     *   <li><b>Pattern</b> (e.g. {@code "classpath*:rules/**&#47;*-rules.xml"}) —
+     *       used as-is for resource resolution</li>
+     * </ul>
+     *
+     * <p>All matched files are loaded via
+     * {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader}
      * and their bean definitions are registered into the same application context.
      *
      * <p>Class-based rules from {@link #scanBasePackages()} are always registered
-     * first; XML locations are loaded afterwards.
+     * first; XML locations are loaded afterwards. Declaring only {@code xmlLocations}
+     * (with no {@code scanBasePackages}) is XML-only: no class scanning is performed.
      *
-     * @return an array of classpath folder locations to scan for XML rule context files
+     * @return an array of locations to load XML rule context files from
      */
     String[] xmlLocations() default {};
 }

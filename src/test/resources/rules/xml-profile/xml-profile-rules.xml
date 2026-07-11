@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- Runtime binding: value (Integer) -->
+    <r:rule name="XmlAlwaysActiveRule" description="Registered regardless of active profiles">
+        <r:given>#ctx.value > 0</r:given>
+    </r:rule>
+
+    <!-- Only registered when the 'xml-profile' profile is active -->
+    <beans profile="xml-profile">
+        <r:rule name="XmlProfileScopedRule" description="Registered only under the xml-profile profile">
+            <r:given>#ctx.value &lt; 0</r:given>
+        </r:rule>
+    </beans>
+
+</beans>

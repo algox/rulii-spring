@@ -17,7 +17,7 @@
  */
 package org.rulii.spring.config;
 
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * Represents meta information about the rules registered within a rule registrar.
@@ -27,6 +27,9 @@ import java.util.Arrays;
  * after rule scanning completes. It can be injected into application components to inspect
  * which packages were scanned, which XML locations were loaded, and how many rules were found.</p>
  *
+ * <p>The record is immutable: both lists are unmodifiable defensive copies, and equality
+ * is value-based.</p>
+ *
  * @param rulePackages the packages that were scanned for {@code @Rule}-annotated classes
  * @param xmlLocations the classpath folders from which XML rule context files were loaded
  * @param ruleCount    the total number of rules successfully registered during scanning
@@ -35,14 +38,10 @@ import java.util.Arrays;
  * @since 1.0
  *
  */
-public record RuleRegistrarMetaInfo(String[] rulePackages, String[] xmlLocations, int ruleCount) {
+public record RuleRegistrarMetaInfo(List<String> rulePackages, List<String> xmlLocations, int ruleCount) {
 
-    @Override
-    public String toString() {
-        return "RuleRegistrarMetaInfo{" +
-                "rulePackages=" + Arrays.toString(rulePackages) +
-                ", xmlLocations=" + Arrays.toString(xmlLocations) +
-                ", ruleCount=" + ruleCount +
-                '}';
+    public RuleRegistrarMetaInfo {
+        rulePackages = List.copyOf(rulePackages);
+        xmlLocations = List.copyOf(xmlLocations);
     }
 }

@@ -136,7 +136,8 @@ public class SpringBootRuliiTest {
         assertNotNull(person);
         assertNotNull(testRule1);
         assertNotNull(testRule12);
-        assertEquals(rules.size(), 10);
+        // includes AlwaysActiveRule from rules.profiletest (ProfileScopedRule is excluded - profile inactive)
+        assertEquals(rules.size(), 11);
     }
 
     @Test
@@ -207,7 +208,7 @@ public class SpringBootRuliiTest {
 
     @Test
     public void test13() {
-        assertEquals(ruleRegistry.getCount(), 11);
+        assertEquals(ruleRegistry.getCount(), 12);
     }
 
     @Test

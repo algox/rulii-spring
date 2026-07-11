@@ -51,6 +51,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ResourceLoader;
 
 import java.time.Clock;
 import java.util.List;
@@ -289,16 +290,19 @@ public class RuleConfig {
     }
 
     /**
-     * Creates a RuleBeanDefinitionRegistryPostProcessor instance if no other bean of type RuleRegistrarMetaInfo is available.
+     * Creates a RuleBeanDefinitionRegistryPostProcessor instance if {@code @RuleScan} has not been processed
+     * (signalled by the internal {@link RuleScanMarker} bean).
      *
      * @param factory the BeanFactory to use
+     * @param environment the Environment used to evaluate {@code @Profile} / {@code @Conditional} on rule classes
+     * @param resourceLoader the ResourceLoader used for classpath scanning
      * @return a new RuleBeanDefinitionRegistryPostProcessor instance
      */
     @Bean
-    @ConditionalOnMissingBean(RuleRegistrarMetaInfo.class)
-    public RuleBeanDefinitionRegistryPostProcessor rulePostProcessor(BeanFactory factory) {
+    @ConditionalOnMissingBean(RuleScanMarker.class)
+    public RuleBeanDefinitionRegistryPostProcessor rulePostProcessor(BeanFactory factory, Environment environment, ResourceLoader resourceLoader) {
         List<String> locations = AutoConfigurationPackages.has(factory) ? AutoConfigurationPackages.get(factory) : null;
         LOGGER.warn("@RuleScan not set. rulii will try to auto register the rules starting at location " + locations);
-        return new RuleBeanDefinitionRegistryPostProcessor(locations);
+        return new RuleBeanDefinitionRegistryPostProcessor(locations, environment, resourceLoader);
     }
 }

@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -165,7 +164,14 @@ class RuleScanXmlLocationsTest {
     @Test
     void metaInfoCapturesXmlLocation() {
         assertNotNull(metaInfo.xmlLocations());
-        assertTrue(Arrays.asList(metaInfo.xmlLocations()).contains("classpath:rules/xml-scan/"),
+        assertTrue(metaInfo.xmlLocations().contains("classpath:rules/xml-scan/"),
                 "xmlLocations should contain the declared folder");
+    }
+
+    @Test
+    void metaInfoShowsNoClassScan() {
+        assertTrue(metaInfo.rulePackages().isEmpty(),
+                "xmlLocations-only @RuleScan must not class-scan any package");
+        assertEquals(0, metaInfo.ruleCount(), "no class-based rules should have been registered");
     }
 }
