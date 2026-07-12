@@ -6,7 +6,7 @@
 
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
 
     <name>rulii-spring</name>
@@ -35,23 +35,21 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>2.0.0-SNAPSHOT</rulii.version>
-        <spring.beans.version>6.2.17</spring.beans.version>
-        <spring.context.version>6.2.17</spring.context.version>
-        <spring.boot.autoconfigure.version>3.5.13</spring.boot.autoconfigure.version>
-        <logback.classic.version>1.5.32</logback.classic.version>
-        <junit.version>5.12.1</junit.version>
+        <rulii.version>2.0.0</rulii.version>
+        <spring.beans.version>6.2.19</spring.beans.version>
+        <spring.context.version>6.2.19</spring.context.version>
+        <spring.boot.autoconfigure.version>3.5.16</spring.boot.autoconfigure.version>
+        <logback.classic.version>1.5.38</logback.classic.version>
+        <junit.version>5.14.4</junit.version>
         <spring.boot.starter.version>3.4.4</spring.boot.starter.version>
-        <spring.boot.starter.test.version>3.5.13</spring.boot.starter.test.version>
-        <graalvm.version>24.1.0</graalvm.version>
-        <janino.version>3.1.12</janino.version>
+        <spring.boot.starter.test.version>3.5.16</spring.boot.starter.test.version>
 
-        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
-        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
-        <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
-        <central-publishing-plugin.version>0.7.0</central-publishing-plugin.version>
-        <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
+        <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <central-publishing-plugin.version>0.11.0</central-publishing-plugin.version>
+        <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
     </properties>
 
     <dependencies>
