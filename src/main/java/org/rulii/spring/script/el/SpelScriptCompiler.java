@@ -21,6 +21,7 @@ import org.rulii.script.BuildScriptException;
 import org.rulii.script.Script;
 import org.rulii.script.ScriptCompiler;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.util.Assert;
 
 /**
  * A {@link ScriptCompiler} implementation that parses Spring Expression Language (SpEL)
@@ -41,22 +42,37 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 public class SpelScriptCompiler implements ScriptCompiler {
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
+    private final String languageName;
 
     /**
-     * Constructs a new {@code SpelScriptCompiler}.
+     * Constructs a new {@code SpelScriptCompiler} for the default language name
+     * ({@value SpelScriptProcessorFactory#LANGUAGE_NAME}).
      */
     public SpelScriptCompiler() {
+        this(SpelScriptProcessorFactory.LANGUAGE_NAME);
+    }
+
+    /**
+     * Constructs a new {@code SpelScriptCompiler} that stamps compiled scripts with the
+     * given language name, so scripts produced by a custom-named
+     * {@link SpelScriptProcessorFactory} dispatch back to that factory's processor.
+     *
+     * @param languageName the language identifier to record on compiled scripts; must not be empty
+     */
+    public SpelScriptCompiler(String languageName) {
         super();
+        Assert.hasText(languageName, "languageName cannot be empty.");
+        this.languageName = languageName;
     }
 
     /**
      * Returns the language name this compiler handles.
      *
-     * @return {@code "el"} (the Spring Expression Language identifier)
+     * @return the language name (by default {@code "el"}, the Spring Expression Language identifier)
      */
     @Override
     public String getLanguageName() {
-        return SpelScriptProcessorFactory.LANGUAGE_NAME;
+        return languageName;
     }
 
 

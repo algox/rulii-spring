@@ -22,6 +22,7 @@ import org.rulii.bind.match.ParameterResolver;
 import org.rulii.context.RuleContextOptions;
 import org.rulii.convert.Converter;
 import org.rulii.convert.ConverterRegistry;
+import org.rulii.convert.DefaultConverterRegistry;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.script.ScriptProcessorFactory;
 import org.rulii.script.ScriptProcessorManager;
@@ -41,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,17 +50,22 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 
 import java.time.Clock;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration class for setting up rules in the system.
@@ -100,13 +107,17 @@ public class RuleConfig {
 
     /**
      * Creates a new MessageResolver instance if no other bean of type MessageResolver is available.
+     * Resolution is MessageSource-first (locale-aware, standard Spring i18n bundles) with an
+     * Environment-property fallback.
      *
+     * @param environment   the Spring Environment used as the fallback source
+     * @param messageSource the application's MessageSource, when uniquely available
      * @return a new MessageResolver instance
      */
     @Bean(name = BeanNames.MESSAGE_RESOLVER)
     @ConditionalOnMissingBean(MessageResolver.class)
-    public MessageResolver messageResolver(Environment environment) {
-        return new SpringEnvironmentMessageResolver(environment);
+    public MessageResolver messageResolver(Environment environment, ObjectProvider<MessageSource> messageSource) {
+        return new SpringEnvironmentMessageResolver(environment, messageSource.getIfUnique());
     }
 
     /**
@@ -142,24 +153,36 @@ public class RuleConfig {
     /**
      * Retrieves or creates a ConverterRegistry instance if no other bean of type ConverterRegistry is available.
      *
-     * @param conversionService    the ConversionService to use for conversion
-     * @param registerDefaults     a boolean indicating whether to register default converters
+     * <p>Precedence (first match wins in rulii's converter lookup): custom rulii
+     * {@link Converter} beans, then the Spring {@link ConversionService} bridge, then
+     * rulii's built-in default converters as the fallback — so application-registered
+     * Spring converters are honored for types the built-ins also cover.
+     *
+     * @param converters        custom rulii Converter beans (highest precedence)
+     * @param conversionService the ConversionService to bridge, when uniquely available
+     * @param registerDefaults  whether to register rulii's built-in default converters
      * @return a new instance of ConverterRegistry
      */
     @Bean(name = BeanNames.SPRING_CONVERTER_REGISTRY)
     @ConditionalOnMissingBean(ConverterRegistry.class)
-    public ConverterRegistry converterRegistry(@Autowired(required = false) Set<Converter<?, ?>> converters,
-                                               @Autowired(required = false) ConversionService conversionService,
-                                               @Value("${rulii.converts.registerDefaults:true}") boolean registerDefaults) {
-        ConverterRegistry result = ConverterRegistry.builder(registerDefaults).build();
-        // Register custom converters
-        if (converters != null && !converters.isEmpty()) {
-            converters.forEach(converter -> {
-                LOGGER.info("Registering custom Converter [" + converter.getClass() + "]");
-                result.register(converter);
-            });
-        }
-        if (conversionService != null) result.register(new SpringConverterAdapter(conversionService));
+    public ConverterRegistry converterRegistry(ObjectProvider<Converter<?, ?>> converters,
+                                               ObjectProvider<ConversionService> conversionService,
+                                               @Value("${rulii.converters.registerDefaults:true}") boolean registerDefaults) {
+        DefaultConverterRegistry result = new DefaultConverterRegistry(false);
+
+        // 1. Custom rulii converters take highest precedence
+        converters.orderedStream().forEach(converter -> {
+            LOGGER.info("Registering custom Converter [" + converter.getClass() + "]");
+            result.register(converter);
+        });
+
+        // 2. The Spring ConversionService bridge (application-registered Spring converters)
+        ConversionService cs = conversionService.getIfUnique();
+        if (cs != null) result.register(new SpringConverterAdapter(cs));
+
+        // 3. rulii's built-in defaults as the fallback
+        if (registerDefaults) result.registerDefaults();
+
         return result;
     }
 
@@ -190,15 +213,18 @@ public class RuleConfig {
      */
     @Bean(BeanNames.SCRIPT_MANAGER)
     @ConditionalOnMissingBean(ScriptProcessorManager.class)
-    public ScriptProcessorManager scriptProcessorManager(@Autowired(required = false) List<ScriptProcessorFactory> factories) {
+    public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactory> factories) {
         ScriptProcessorManager result = ScriptProcessorManager.getInstance();
 
-        if (factories != null && !factories.isEmpty()) {
-             factories.forEach(factory -> {
-                LOGGER.info("Registering custom ScriptProcessor [" + factory.getClass() + "] Language [" + factory.getLanguageName() + "]");
-                result.register(factory);
-             });
-        }
+        factories.orderedStream().forEach(factory -> {
+            LOGGER.info("Registering custom ScriptProcessor [" + factory.getClass() + "] Language [" + factory.getLanguageName() + "]");
+            // Force the manager's lazy ServiceLoader discovery to run BEFORE this explicit
+            // registration. load() re-registers discovered defaults unconditionally, so
+            // registering first would let the first rule evaluation silently clobber this
+            // factory with the ServiceLoader default for the same language.
+            result.getScriptProcessorFactory(factory.getLanguageName());
+            result.register(factory);
+        });
 
         return result;
     }
@@ -207,7 +233,8 @@ public class RuleConfig {
      * Creates a Tracer instance if no other bean of type Tracer is available.
      * Any listener beans found in the application context are automatically registered:
      * {@link RuliiListener} beans receive all event categories; {@link RuleListener} and
-     * {@link RuleSetListener} beans receive their respective category only.
+     * {@link RuleSetListener} beans receive their respective category only. Each listener
+     * bean is registered exactly once, even when it implements multiple listener interfaces.
      *
      * @param ruliiListeners listener beans to register for all event categories
      * @param ruleListeners listener beans to register for rule events
@@ -216,35 +243,31 @@ public class RuleConfig {
      */
     @Bean(BeanNames.TRACER)
     @ConditionalOnMissingBean(Tracer.class)
-    public Tracer tracer(@Autowired(required = false) List<RuliiListener> ruliiListeners,
-                         @Autowired(required = false) List<RuleListener> ruleListeners,
-                         @Autowired(required = false) List<RuleSetListener> ruleSetListeners) {
+    public Tracer tracer(ObjectProvider<RuliiListener> ruliiListeners,
+                         ObjectProvider<RuleListener> ruleListeners,
+                         ObjectProvider<RuleSetListener> ruleSetListeners) {
         Tracer result = Tracer.builder().build();
+        // Identity-based: a bean implementing several listener interfaces appears in several
+        // provider streams and must be registered exactly once (RuliiListener wins, being first).
+        Set<Object> registered = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        if (ruliiListeners != null) {
-            ruliiListeners.forEach(listener -> {
-                LOGGER.info("Registering RuliiListener [" + listener.getClass() + "]");
-                result.addListener(listener);
-            });
-        }
+        ruliiListeners.orderedStream().forEach(listener -> {
+            if (!registered.add(listener)) return;
+            LOGGER.info("Registering RuliiListener [" + listener.getClass() + "]");
+            result.addListener(listener);
+        });
 
-        if (ruleListeners != null) {
-            ruleListeners.stream()
-                    .filter(listener -> !(listener instanceof RuliiListener))
-                    .forEach(listener -> {
-                        LOGGER.info("Registering RuleListener [" + listener.getClass() + "]");
-                        result.addListener(listener);
-                    });
-        }
+        ruleListeners.orderedStream().forEach(listener -> {
+            if (!registered.add(listener)) return;
+            LOGGER.info("Registering RuleListener [" + listener.getClass() + "]");
+            result.addListener(listener);
+        });
 
-        if (ruleSetListeners != null) {
-            ruleSetListeners.stream()
-                    .filter(listener -> !(listener instanceof RuliiListener))
-                    .forEach(listener -> {
-                        LOGGER.info("Registering RuleSetListener [" + listener.getClass() + "]");
-                        result.addListener(listener);
-                    });
-        }
+        ruleSetListeners.orderedStream().forEach(listener -> {
+            if (!registered.add(listener)) return;
+            LOGGER.info("Registering RuleSetListener [" + listener.getClass() + "]");
+            result.addListener(listener);
+        });
 
         return result;
     }
@@ -254,13 +277,23 @@ public class RuleConfig {
      * {@link BeanNames#EXECUTOR_SERVICE} is present. Tied to the application context
      * lifecycle; shut down gracefully when the context closes.
      *
-     * @return a new fixed thread pool sized to the available processors (minimum 2)
+     * <p><strong>Override contract:</strong> unlike the other defaults (which are overridden
+     * by TYPE), this bean is deliberately matched by NAME — Spring applications routinely
+     * contain unrelated {@link ExecutorService} beans that must not hijack rule execution.
+     * To supply your own pool, define a bean named {@value BeanNames#EXECUTOR_SERVICE}.
+     *
+     * <p>The pool mirrors rulii core's hardened default: bounded work queue with a
+     * caller-runs rejection policy for graceful degradation under load (never an
+     * unbounded queue).
+     *
+     * @return a new bounded thread pool sized to the available processors (minimum 2)
      */
     @Bean(name = BeanNames.EXECUTOR_SERVICE, destroyMethod = "shutdown")
     @ConditionalOnMissingBean(name = BeanNames.EXECUTOR_SERVICE)
     public ExecutorService executorService() {
         int threads = Math.max(2, Runtime.getRuntime().availableProcessors());
-        return Executors.newFixedThreadPool(threads);
+        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(1000), new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     /**
@@ -275,6 +308,9 @@ public class RuleConfig {
      * @param ruleRegistry the RuleRegistry to use
      * @param tracer the Tracer to use
      * @param executorService the ExecutorService to use for async rule execution
+     * @param clock the Clock bean to use, when uniquely available (defaults to the system clock);
+     *              overridable for deterministic time in tests
+     * @param locale the Locale bean to use, when uniquely available (defaults to the JVM default)
      * @return a new instance of RuleContextOptions
      */
     @Bean(BeanNames.SPRING_CONTEXT_OPTIONS)
@@ -283,10 +319,12 @@ public class RuleConfig {
                                                  MessageFormatter messageFormatter, ConverterRegistry converterRegistry,
                                                  ObjectFactory objectFactory, MessageResolver messageResolver,
                                                  RuleRegistry ruleRegistry, Tracer tracer,
-                                                 @Qualifier(BeanNames.EXECUTOR_SERVICE) ExecutorService executorService) {
+                                                 @Qualifier(BeanNames.EXECUTOR_SERVICE) ExecutorService executorService,
+                                                 ObjectProvider<Clock> clock, ObjectProvider<Locale> locale) {
         return new SpringEnabledRuleContextOptions(matchingStrategy, parameterResolver, messageFormatter,
                 converterRegistry, objectFactory, messageResolver, executorService,
-                Clock.systemDefaultZone(), Locale.getDefault(), ruleRegistry, tracer);
+                clock.getIfUnique(Clock::systemDefaultZone), locale.getIfUnique(Locale::getDefault),
+                ruleRegistry, tracer);
     }
 
     /**

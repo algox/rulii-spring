@@ -53,6 +53,8 @@ public class TracerListenerRegistrationTest {
     private CountingRuliiListener ruliiListener;
     @Autowired
     private CountingRuleListener ruleListener;
+    @Autowired
+    private CountingDualListener dualListener;
 
     public TracerListenerRegistrationTest() {
         super();
@@ -84,6 +86,23 @@ public class TracerListenerRegistrationTest {
         Assertions.assertEquals(ruleStartsBefore + 1, ruleListener.getRuleStartCount());
     }
 
+    @Test
+    public void testListenerImplementingMultipleInterfacesRegistersOnce() {
+        int startsBefore = dualListener.getRuleStartCount();
+
+        Rule rule = Rule.builder()
+                .name("dualProbeRule")
+                .given(condition(() -> true))
+                .then(action(() -> {}))
+                .build();
+
+        rule.run(RuleContext.builder().with(ruleContextOptions).build());
+
+        // A bean implementing BOTH RuleListener and RuleSetListener appears in both
+        // provider streams but must be registered (and receive events) exactly once.
+        Assertions.assertEquals(startsBefore + 1, dualListener.getRuleStartCount());
+    }
+
     @TestConfiguration
     static class ListenerConfig {
 
@@ -99,6 +118,11 @@ public class TracerListenerRegistrationTest {
         @Bean
         public CountingRuleListener countingRuleListener() {
             return new CountingRuleListener();
+        }
+
+        @Bean
+        public CountingDualListener countingDualListener() {
+            return new CountingDualListener();
         }
     }
 
@@ -125,6 +149,24 @@ public class TracerListenerRegistrationTest {
         private final AtomicInteger ruleStartCount = new AtomicInteger();
 
         public CountingRuleListener() {
+            super();
+        }
+
+        @Override
+        public void onRuleStart(Rule rule) {
+            ruleStartCount.incrementAndGet();
+        }
+
+        public int getRuleStartCount() {
+            return ruleStartCount.get();
+        }
+    }
+
+    static class CountingDualListener implements RuleListener, org.rulii.ruleset.RuleSetListener {
+
+        private final AtomicInteger ruleStartCount = new AtomicInteger();
+
+        public CountingDualListener() {
             super();
         }
 

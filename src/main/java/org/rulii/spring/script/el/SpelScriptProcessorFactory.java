@@ -17,6 +17,9 @@
  */
 package org.rulii.spring.script.el;
 
+// Deliberately uses rulii's repackaged Assert (not org.springframework.util.Assert): this class
+// must be loadable WITHOUT Spring on the classpath so that isAvailable() can gracefully report
+// false during ServiceLoader discovery when spring-expression (a provided dependency) is absent.
 import org.rulii.lib.spring.util.Assert;
 import org.rulii.script.ScriptCompiler;
 import org.rulii.script.ScriptOptions;
@@ -53,8 +56,21 @@ public class SpelScriptProcessorFactory implements ScriptProcessorFactory {
     /** The language identifier used to select this factory: {@value}. */
     public static final String LANGUAGE_NAME = "el";
 
+    /** Probed once at class load: false when spring-expression is not on the classpath. */
+    private static final boolean SPEL_PRESENT = detectSpel();
+
     private final String languageName;
     private final String bindingName;
+
+    private static boolean detectSpel() {
+        try {
+            Class.forName("org.springframework.expression.spel.standard.SpelExpressionParser",
+                    false, SpelScriptProcessorFactory.class.getClassLoader());
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
 
     /**
      * Constructs a {@code SpelScriptProcessorFactory} with default language name ({@value #LANGUAGE_NAME})
@@ -67,6 +83,11 @@ public class SpelScriptProcessorFactory implements ScriptProcessorFactory {
     /**
      * Constructs a {@code SpelScriptProcessorFactory} with the specified language and binding names.
      *
+     * <p><strong>Note:</strong> the binding name is part of the expression author's contract —
+     * expressions must reference the bindings variable under this exact name. All shipped XML
+     * examples, documentation, and the default configuration use {@code #ctx}; choosing a
+     * different name means every expression must use {@code #yourName} instead.
+     *
      * @param languageName the language identifier for this factory; must not be empty
      * @param bindingName  the variable name under which the rule context's
      *                     {@link org.rulii.bind.Bindings} is exposed in SpEL expressions; must not be empty
@@ -77,6 +98,19 @@ public class SpelScriptProcessorFactory implements ScriptProcessorFactory {
         Assert.hasText(bindingName, "bindingName cannot be empty.");
         this.languageName = languageName;
         this.bindingName = bindingName;
+    }
+
+    /**
+     * Returns whether the SpEL engine is usable: {@code false} when the (provided-scope)
+     * {@code spring-expression} dependency is not on the classpath, so ServiceLoader
+     * discovery skips this factory gracefully instead of failing later with a
+     * {@link NoClassDefFoundError} during rule compilation.
+     *
+     * @return {@code true} if spring-expression is present
+     */
+    @Override
+    public boolean isAvailable() {
+        return SPEL_PRESENT;
     }
 
     /**
@@ -112,11 +146,13 @@ public class SpelScriptProcessorFactory implements ScriptProcessorFactory {
 
     /**
      * Creates a new {@link SpelScriptCompiler} for parsing SpEL expression strings.
+     * The compiler stamps compiled scripts with this factory's language name so they
+     * dispatch back to this factory's processor at evaluation time.
      *
      * @return a new {@link SpelScriptCompiler} instance
      */
     @Override
     public ScriptCompiler getScriptCompiler() {
-        return new SpelScriptCompiler();
+        return new SpelScriptCompiler(languageName);
     }
 }

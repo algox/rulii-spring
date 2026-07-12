@@ -17,107 +17,132 @@
  */
 package org.rulii.spring.test.bind.load;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.rulii.bind.Bindings;
 import org.rulii.spring.bind.load.SpringContextBindingLoader;
-import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+/**
+ * Tests for {@link SpringContextBindingLoader} against a REAL application context.
+ *
+ * <p>Regression tests: the loader previously bound raw Spring bean names (dotted internal
+ * names violate rulii's binding-name rules and aborted the whole load) and eagerly
+ * instantiated every bean just to read its class, defeating its own lazy delegate.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ */
 public class SpringContextBindingLoaderTest {
 
-    @Mock
-    private ListableBeanFactory beanFactory;
+    static final AtomicBoolean LAZY_CREATED = new AtomicBoolean(false);
 
-    @Test
-    public void testLoadBindsSingleBean() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[]{"myBean"});
-        when(beanFactory.getBean("myBean")).thenReturn("beanValue");
+    /** Expensive bean that must NOT be instantiated by loading bindings. */
+    static class ExpensiveBean {
+        ExpensiveBean() {
+            super();
+            LAZY_CREATED.set(true);
+        }
+    }
 
+    @Configuration
+    static class Config {
+
+        @Bean
+        public String myBean() {
+            return "beanValue";
+        }
+
+        @Bean
+        public Integer intBean() {
+            return 100;
+        }
+
+        @Bean
+        @Lazy
+        public ExpensiveBean expensiveBean() {
+            return new ExpensiveBean();
+        }
+    }
+
+    private AnnotationConfigApplicationContext context;
+    private final SpringContextBindingLoader loader = new SpringContextBindingLoader();
+
+    @BeforeEach
+    public void setUp() {
+        LAZY_CREATED.set(false);
+        context = new AnnotationConfigApplicationContext(Config.class);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        context.close();
+    }
+
+    private Bindings load() {
         Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
-
-        assertTrue(bindings.contains("myBean"));
+        loader.load(bindings, context.getBeanFactory());
+        return bindings;
     }
 
     @Test
-    public void testLoadBindingHasCorrectValue() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[]{"myBean"});
-        when(beanFactory.getBean("myBean")).thenReturn("beanValue");
+    public void testLoadBindsBeansWithValuesAndTypes() {
+        Bindings bindings = load();
 
-        Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
-
+        assertTrue(bindings.contains("myBean"));
         assertEquals("beanValue", bindings.getValue("myBean"));
+        assertTrue(bindings.contains("intBean"));
+        assertEquals(Integer.class, bindings.getBinding("intBean").getType());
     }
 
     @Test
     public void testLoadBindingsAreReadOnly() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[]{"readOnlyBean"});
-        when(beanFactory.getBean("readOnlyBean")).thenReturn("value");
-
-        Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
-
-        assertFalse(bindings.getBinding("readOnlyBean").isEditable());
+        Bindings bindings = load();
+        assertFalse(bindings.getBinding("myBean").isEditable());
     }
 
     @Test
-    public void testLoadMultipleBeans() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[]{"bean1", "bean2", "bean3"});
-        when(beanFactory.getBean("bean1")).thenReturn("v1");
-        when(beanFactory.getBean("bean2")).thenReturn(42);
-        when(beanFactory.getBean("bean3")).thenReturn(true);
+    public void testDottedInternalBeanNamesAreSkippedNotFatal() {
+        // A real annotation-config context always contains dotted internal names.
+        assertTrue(Arrays.stream(context.getBeanFactory().getBeanDefinitionNames())
+                        .anyMatch(name -> name.contains(".")),
+                "precondition: the context should contain dotted bean names");
 
-        Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
+        Bindings bindings = load();
 
-        assertTrue(bindings.contains("bean1"));
-        assertTrue(bindings.contains("bean2"));
-        assertTrue(bindings.contains("bean3"));
+        assertTrue(bindings.contains("myBean"), "valid beans must still be bound");
+        assertTrue(bindings.size() > 0);
     }
 
     @Test
-    public void testLoadEmptyFactory() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[0]);
+    public void testLoadDoesNotInstantiateLazyBeans() {
+        Bindings bindings = load();
 
-        Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
+        assertFalse(LAZY_CREATED.get(), "loading bindings must not instantiate @Lazy beans");
+        assertTrue(bindings.contains("expensiveBean"), "the lazy bean must still be bound (by metadata type)");
+        assertEquals(ExpensiveBean.class, bindings.getBinding("expensiveBean").getType());
 
-        assertEquals(0, bindings.size());
+        // Accessing the binding value resolves the bean lazily.
+        assertNotNull(bindings.getValue("expensiveBean"));
+        assertTrue(LAZY_CREATED.get());
     }
 
     @Test
     public void testLoadNullBindingsThrows() {
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        assertThrows(Exception.class, () -> loader.load(null, beanFactory));
+        assertThrows(Exception.class, () -> loader.load(null, context.getBeanFactory()));
     }
 
     @Test
     public void testLoadNullFactoryThrows() {
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
         assertThrows(Exception.class, () -> loader.load(Bindings.builder().standard(), null));
-    }
-
-    @Test
-    public void testLoadBindingHasCorrectType() {
-        when(beanFactory.getBeanDefinitionNames()).thenReturn(new String[]{"intBean"});
-        when(beanFactory.getBean("intBean")).thenReturn(Integer.valueOf(100));
-
-        Bindings bindings = Bindings.builder().standard();
-        SpringContextBindingLoader loader = new SpringContextBindingLoader();
-        loader.load(bindings, beanFactory);
-
-        assertEquals(Integer.class, bindings.getBinding("intBean").getType());
     }
 }

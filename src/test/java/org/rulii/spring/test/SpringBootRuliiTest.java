@@ -144,7 +144,9 @@ public class SpringBootRuliiTest {
     public void test4() {
         Converter<String, Currency> currencyConverter = converterRegistry.find(String.class, Currency.class);
         assertNotNull(currencyConverter);
-        assertEquals(currencyConverter.getClass(), TextToCurrencyConverter.class);
+        // The Spring ConversionService bridge now takes precedence over rulii's built-in
+        // defaults (which remain the fallback for pairs Spring cannot convert).
+        assertEquals(currencyConverter.getClass(), SpringConverterAdapter.class);
         Currency currency = currencyConverter.convert("CAD", Currency.class);
         assertEquals(currency.getCurrencyCode(), "CAD");
     }

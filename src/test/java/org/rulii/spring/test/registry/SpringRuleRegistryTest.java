@@ -17,159 +17,137 @@
  */
 package org.rulii.spring.test.registry;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.rulii.model.UnrulyException;
 import org.rulii.rule.Rule;
+import org.rulii.ruleflow.RuleFlow;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.registry.SpringRuleRegistry;
-import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
-import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
+/**
+ * Tests for {@link SpringRuleRegistry} against real bean factories.
+ *
+ * <p>Includes regression coverage for: enumeration/lookup hierarchy consistency (rules in
+ * parent contexts appear in {@code getRules()}), {@code getRuleFlows()} enumeration, and
+ * metadata-based type matching in {@code get(name, type)}.
+ *
+ * @author Max Arulananthan
+ * @since 1.0
+ */
 public class SpringRuleRegistryTest {
 
-    @Mock
-    private ListableBeanFactory beanFactory;
+    private DefaultListableBeanFactory beanFactory;
+    private SpringRuleRegistry registry;
 
-    @Test
-    public void testIsNameInUseReturnsTrue() {
-        when(beanFactory.containsBean("existingRule")).thenReturn(true);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        assertTrue(registry.isNameInUse("existingRule"));
+    private final Rule rule1 = mock(Rule.class);
+    private final Rule rule2 = mock(Rule.class);
+    @SuppressWarnings("rawtypes")
+    private final RuleSet ruleSet1 = mock(RuleSet.class);
+    @SuppressWarnings("rawtypes")
+    private final RuleFlow ruleFlow1 = mock(RuleFlow.class);
+
+    @BeforeEach
+    public void setUp() {
+        beanFactory = new DefaultListableBeanFactory();
+        beanFactory.registerSingleton("rule1", rule1);
+        beanFactory.registerSingleton("rule2", rule2);
+        beanFactory.registerSingleton("ruleSet1", ruleSet1);
+        beanFactory.registerSingleton("ruleFlow1", ruleFlow1);
+        beanFactory.registerSingleton("notARule", "just a string");
+        registry = new SpringRuleRegistry(beanFactory);
     }
 
     @Test
-    public void testIsNameInUseReturnsFalse() {
-        when(beanFactory.containsBean("unknown")).thenReturn(false);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
+    public void testIsNameInUse() {
+        assertTrue(registry.isNameInUse("rule1"));
         assertFalse(registry.isNameInUse("unknown"));
     }
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void testGetCountReturnsBeanCount() {
-        Map<String, org.rulii.model.Runnable> runnables = new LinkedHashMap<>();
-        runnables.put("r1", mock(org.rulii.model.Runnable.class));
-        runnables.put("r2", mock(org.rulii.model.Runnable.class));
-        when(beanFactory.getBeansOfType(org.rulii.model.Runnable.class)).thenReturn(runnables);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        assertEquals(2, registry.getCount());
+    public void testGetCountCountsAllRunnables() {
+        // 2 rules + 1 ruleset + 1 ruleflow; the String bean does not count
+        assertEquals(4, registry.getCount());
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testGetRulesReturnsAllRules() {
-        Rule rule1 = mock(Rule.class);
-        Rule rule2 = mock(Rule.class);
-        Map<String, Rule> rulesMap = new LinkedHashMap<>();
-        rulesMap.put("rule1", rule1);
-        rulesMap.put("rule2", rule2);
-        when(beanFactory.getBeansOfType(Rule.class)).thenReturn(rulesMap);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertEquals(2, registry.getRules().size());
         assertTrue(registry.getRules().contains(rule1));
         assertTrue(registry.getRules().contains(rule2));
     }
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void testGetRuleSetsReturnsAllRuleSets() {
-        RuleSet rs1 = mock(RuleSet.class);
-        Map<String, RuleSet> rsMap = new LinkedHashMap<>();
-        rsMap.put("rs1", rs1);
-        when(beanFactory.getBeansOfType(RuleSet.class)).thenReturn(rsMap);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertEquals(1, registry.getRuleSets().size());
+        assertTrue(registry.getRuleSets().contains(ruleSet1));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    public void testGetRuleFlowsReturnsAllRuleFlows() {
+        assertEquals(1, registry.getRuleFlows().size());
+        assertTrue(registry.getRuleFlows().contains(ruleFlow1));
+    }
+
+    @Test
+    public void testEnumerationIncludesParentContext() {
+        DefaultListableBeanFactory parent = new DefaultListableBeanFactory();
+        Rule parentRule = mock(Rule.class);
+        parent.registerSingleton("parentRule", parentRule);
+
+        DefaultListableBeanFactory child = new DefaultListableBeanFactory(parent);
+        child.registerSingleton("childRule", rule1);
+
+        SpringRuleRegistry hierarchical = new SpringRuleRegistry(child);
+        // by-name lookup traverses the hierarchy - enumeration must agree
+        assertNotNull(hierarchical.get("parentRule", Rule.class));
+        assertEquals(2, hierarchical.getRules().size());
+        assertTrue(hierarchical.getRules().contains(parentRule));
+    }
+
+    @Test
     public void testGetByNameAndType() {
-        Rule rule = mock(Rule.class);
-        when(beanFactory.containsBean("myRule")).thenReturn(true);
-        when(beanFactory.getBean("myRule", Rule.class)).thenReturn(rule);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        assertEquals(rule, registry.get("myRule", Rule.class));
+        assertEquals(rule1, registry.get("rule1", Rule.class));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testGetByNameDelegatesToFactory() {
-        Rule rule = mock(Rule.class);
-        when(beanFactory.containsBean("myRule")).thenReturn(true);
-        when(beanFactory.getBean("myRule", org.rulii.model.Runnable.class)).thenReturn(rule);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        assertEquals(rule, registry.get("myRule"));
+        assertEquals(rule1, registry.get("rule1"));
     }
 
     @Test
     public void testGetUnknownNameReturnsNull() {
-        when(beanFactory.containsBean("unknown")).thenReturn(false);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertNull(registry.get("unknown"));
-    }
-
-    @Test
-    public void testGetUnknownNameAndTypeReturnsNull() {
-        when(beanFactory.containsBean("unknown")).thenReturn(false);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertNull(registry.get("unknown", Rule.class));
     }
 
     @Test
     public void testGetRuleUnknownNameReturnsNull() {
-        when(beanFactory.containsBean("unknown")).thenReturn(false);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertNull(registry.getRule("unknown"));
     }
 
     @Test
     public void testGetRuleSetUnknownNameReturnsNull() {
-        when(beanFactory.containsBean("unknown")).thenReturn(false);
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
         assertNull(registry.getRuleSet("unknown"));
     }
 
     @Test
     public void testGetWrongTypeReturnsNull() {
-        when(beanFactory.containsBean("myRuleSet")).thenReturn(true);
-        when(beanFactory.getBean("myRuleSet", Rule.class))
-                .thenThrow(new BeanNotOfRequiredTypeException("myRuleSet", Rule.class, RuleSet.class));
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        assertNull(registry.get("myRuleSet", Rule.class));
+        // 'ruleSet1' exists but is not a Rule - resolved via metadata, no exception flow
+        assertNull(registry.get("ruleSet1", Rule.class));
+        // a non-Runnable bean is also null through the Runnable-typed lookup
+        assertNull(registry.get("notARule"));
     }
 
     @Test
     public void testHandleContextClosedEventNullsContext() {
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        ContextClosedEvent event = mock(ContextClosedEvent.class);
-        registry.handleContextRefreshEvent(event);
+        registry.onContextClosed(mock(ContextClosedEvent.class));
         assertThrows(UnrulyException.class, () -> registry.isNameInUse("anything"));
-    }
-
-    @Test
-    public void testIsNameInUseAfterContextCloseThrows() {
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        ContextClosedEvent event = mock(ContextClosedEvent.class);
-        registry.handleContextRefreshEvent(event);
-        assertThrows(UnrulyException.class, () -> registry.isNameInUse("testRule"));
-    }
-
-    @Test
-    public void testGetCountAfterContextCloseThrows() {
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        ContextClosedEvent event = mock(ContextClosedEvent.class);
-        registry.handleContextRefreshEvent(event);
         assertThrows(UnrulyException.class, registry::getCount);
     }
 
@@ -180,9 +158,6 @@ public class SpringRuleRegistryTest {
 
     @Test
     public void testToStringContainsClassName() {
-        SpringRuleRegistry registry = new SpringRuleRegistry(beanFactory);
-        String str = registry.toString();
-        assertNotNull(str);
-        assertTrue(str.contains("SpringRuleRegistry"));
+        assertTrue(registry.toString().contains("SpringRuleRegistry"));
     }
 }

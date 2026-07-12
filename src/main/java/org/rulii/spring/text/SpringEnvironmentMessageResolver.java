@@ -18,13 +18,22 @@
 package org.rulii.spring.text;
 
 import org.rulii.text.MessageResolver;
+import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 import java.util.Locale;
 
 /**
- * Manages resolving messages based on the Spring Environment.
+ * Resolves rule messages via Spring's standard i18n mechanism with an Environment fallback.
+ *
+ * <p>Resolution order:
+ * <ol>
+ *   <li>{@link MessageSource} (when one is available) — locale-aware, backed by the
+ *       application's {@code messages*.properties} bundles</li>
+ *   <li>{@link Environment} properties (e.g. {@code application.yaml}) — locale-insensitive</li>
+ *   <li>the supplied default message</li>
+ * </ol>
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -32,23 +41,58 @@ import java.util.Locale;
 public class SpringEnvironmentMessageResolver implements MessageResolver {
 
     private final Environment environment;
+    private final MessageSource messageSource;
+
+    /**
+     * Constructs a resolver backed only by the Environment (no MessageSource).
+     *
+     * @param environment the Spring Environment; must not be null
+     */
     public SpringEnvironmentMessageResolver(Environment environment) {
-        super();
-        Assert.notNull(environment, "environment cannot be null.");
-        this.environment = environment;
+        this(environment, null);
     }
 
     /**
-     * Resolves a message based on the given message code, and default message. The locale is ignored as the resolution
-     * is based on the Spring Environment.
+     * Constructs a resolver that consults the given MessageSource first and falls back
+     * to Environment properties.
      *
-     * @param locale the Locale for which the message should be resolved. This value is ignored.
-     * @param code the code identifying the message to be resolved
+     * @param environment   the Spring Environment; must not be null
+     * @param messageSource the MessageSource for locale-aware resolution; may be null
+     */
+    public SpringEnvironmentMessageResolver(Environment environment, MessageSource messageSource) {
+        super();
+        Assert.notNull(environment, "environment cannot be null.");
+        this.environment = environment;
+        this.messageSource = messageSource;
+    }
+
+    /**
+     * Resolves a message for the given code: MessageSource first (locale-aware), then
+     * Environment properties, then the default message.
+     *
+     * @param locale the Locale for which the message should be resolved; falls back to the
+     *               JVM default when null (only relevant for MessageSource resolution)
+     * @param code the code identifying the message to be resolved; a null code resolves
+     *             to the default message
      * @param defaultMessage the default message to be returned if the code is not found
      * @return the resolved message for the given code, or the default message if not found
      */
     @Override
     public String resolve(Locale locale, String code, String defaultMessage) {
-        return environment.getProperty(code, defaultMessage);
+        if (code == null) return defaultMessage;
+
+        if (messageSource != null) {
+            String result = messageSource.getMessage(code, null, null,
+                    locale != null ? locale : Locale.getDefault());
+            if (result != null) return result;
+        }
+
+        try {
+            return environment.getProperty(code, defaultMessage);
+        } catch (IllegalArgumentException e) {
+            // The property value contains an unresolvable ${...} placeholder - fall back
+            // rather than failing message resolution for the whole violation.
+            return defaultMessage;
+        }
     }
 }

@@ -55,9 +55,11 @@ public class BindingAccessorTest {
     }
 
     @Test
-    public void testCanReadReturnsFalseForMissingBinding() throws AccessException {
+    public void testCanReadReturnsTrueForMissingBinding() throws AccessException {
+        // Absent bindings read as null (guard expressions like '#ctx.x != null' rely on it),
+        // so the accessor claims every name on a Bindings target.
         Bindings bindings = Bindings.builder().standard();
-        assertFalse(accessor.canRead(evalContext, bindings, "notExists"));
+        assertTrue(accessor.canRead(evalContext, bindings, "notExists"));
     }
 
     @Test
@@ -88,16 +90,27 @@ public class BindingAccessorTest {
     }
 
     @Test
-    public void testReadReturnsTypedValueNullForNonBindingsTarget() throws AccessException {
-        TypedValue value = accessor.read(evalContext, "notABindings", "name");
-        assertEquals(TypedValue.NULL, value);
+    public void testReadThrowsForNonBindingsTarget() {
+        AccessException ex = assertThrows(AccessException.class,
+                () -> accessor.read(evalContext, "notABindings", "name"));
+        assertTrue(ex.getMessage().contains("name"));
     }
 
     @Test
-    public void testReadNullBindingReturnsTypedValueNull() throws AccessException {
+    public void testReadReturnsTypedValueNullForMissingBinding() throws AccessException {
         Bindings bindings = Bindings.builder().standard();
         TypedValue value = accessor.read(evalContext, bindings, "nonExistentBinding");
-        assertEquals(TypedValue.NULL, value);
+        assertEquals(TypedValue.NULL, value, "absent bindings must read as null, not error");
+    }
+
+    @Test
+    public void testReadCarriesDeclaredBindingType() throws AccessException {
+        Bindings bindings = Bindings.builder().standard();
+        bindings.bind("count", Integer.class, 42);
+        TypedValue value = accessor.read(evalContext, bindings, "count");
+        assertNotNull(value.getTypeDescriptor());
+        assertEquals(Integer.class, value.getTypeDescriptor().getType(),
+                "TypedValue should carry the binding's declared type, not just the runtime class");
     }
 
     @Test
@@ -135,7 +148,8 @@ public class BindingAccessorTest {
     }
 
     @Test
-    public void testWriteToNonBindingsTargetDoesNotThrow() {
-        assertDoesNotThrow(() -> accessor.write(evalContext, "notBindings", "key", "value"));
+    public void testWriteToNonBindingsTargetThrows() {
+        assertThrows(AccessException.class,
+                () -> accessor.write(evalContext, "notBindings", "key", "value"));
     }
 }

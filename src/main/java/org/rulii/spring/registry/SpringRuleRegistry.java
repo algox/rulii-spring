@@ -21,18 +21,27 @@ import org.rulii.model.Runnable;
 import org.rulii.model.UnrulyException;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
+import org.rulii.ruleflow.RuleFlow;
 import org.rulii.ruleset.RuleSet;
-import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
+import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a registry for managing rules within a Spring ApplicationContext.
- * Provides methods for handling rules and rule sets.
+ * Provides methods for handling rules, rule sets, and rule flows.
+ *
+ * <p>Lookups are hierarchy-consistent: enumeration ({@link #getRules()}, {@link #getRuleSets()},
+ * {@link #getRuleFlows()}, {@link #getCount()}) includes ancestor bean factories, matching the
+ * by-name lookups. Bean-name resolution per type is cached (bean definitions are frozen after
+ * context refresh); the cache is released when the context closes.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -40,7 +49,8 @@ import java.util.List;
  */
 public class SpringRuleRegistry implements RuleRegistry {
 
-    private ListableBeanFactory ctx;
+    private volatile ListableBeanFactory ctx;
+    private final Map<Class<?>, String[]> beanNameCache = new ConcurrentHashMap<>();
 
     /**
      * Initializes a new SpringRuleRegistry with the specified ApplicationContext.
@@ -52,6 +62,7 @@ public class SpringRuleRegistry implements RuleRegistry {
         Assert.notNull(ctx, "ctx cannot be null.");
         this.ctx = ctx;
     }
+
     @Override
     public boolean isNameInUse(String name) {
         Assert.notNull(name, "name cannot be null.");
@@ -60,24 +71,29 @@ public class SpringRuleRegistry implements RuleRegistry {
 
     @Override
     public int getCount() {
-        return getCtx().getBeansOfType(Runnable.class).size();
+        return beanNames(Runnable.class).length;
     }
 
     @Override
     public List<Rule> getRules() {
-        return getCtx().getBeansOfType(Rule.class).values().stream().toList();
+        return beansOf(Rule.class);
     }
 
     @SuppressWarnings("rawtypes")
     @Override
     public List<RuleSet> getRuleSets() {
-        return getCtx().getBeansOfType(RuleSet.class).values().stream().toList();
+        return beansOf(RuleSet.class);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public List<RuleFlow<?>> getRuleFlows() {
+        return (List) beansOf(RuleFlow.class);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <R, T extends Runnable<R>> T get(String name) {
-        Assert.notNull(name, "name cannot be null.");
         return (T) get(name, Runnable.class);
     }
 
@@ -86,12 +102,34 @@ public class SpringRuleRegistry implements RuleRegistry {
         Assert.notNull(name, "name cannot be null.");
         Assert.notNull(type, "type cannot be null.");
         ListableBeanFactory ctx = getCtx();
-        if (!ctx.containsBean(name)) return null;
-        try {
-            return ctx.getBean(name, type);
-        } catch (BeanNotOfRequiredTypeException e) {
-            return null;
-        }
+        // isTypeMatch answers from metadata - no exception-driven control flow and no
+        // instantiation of beans that turn out to be of a different type.
+        if (!ctx.containsBean(name) || !ctx.isTypeMatch(name, type)) return null;
+        return ctx.getBean(name, type);
+    }
+
+    /**
+     * Returns the bean names for the given type, including ancestor bean factories.
+     * Results are cached - bean definitions are frozen once the context is refreshed.
+     *
+     * @param type the type to look up
+     * @return the matching bean names
+     */
+    private String[] beanNames(Class<?> type) {
+        return beanNameCache.computeIfAbsent(type,
+                t -> BeanFactoryUtils.beanNamesForTypeIncludingAncestors(getCtx(), t, true, true));
+    }
+
+    /**
+     * Resolves all beans of the given type via the cached name list.
+     *
+     * @param type the type to resolve
+     * @param <T>  the bean type
+     * @return the resolved beans
+     */
+    private <T> List<T> beansOf(Class<T> type) {
+        ListableBeanFactory ctx = getCtx();
+        return Arrays.stream(beanNames(type)).map(name -> ctx.getBean(name, type)).toList();
     }
 
     /**
@@ -100,18 +138,20 @@ public class SpringRuleRegistry implements RuleRegistry {
      * @return The application context instance.
      */
     private ListableBeanFactory getCtx() {
-        if (ctx == null) throw new UnrulyException("Application Context is closed.");
-        return ctx;
+        ListableBeanFactory result = ctx;
+        if (result == null) throw new UnrulyException("Application Context is closed.");
+        return result;
     }
 
     /**
-     * Handles the ContextClosedEvent by setting the ApplicationContext to null.
+     * Handles the ContextClosedEvent by releasing the ApplicationContext and the name cache.
      *
      * @param ctxClosedEvent the ContextClosedEvent to be handled
      */
     @EventListener
-    public void handleContextRefreshEvent(ContextClosedEvent ctxClosedEvent) {
+    public void onContextClosed(ContextClosedEvent ctxClosedEvent) {
         this.ctx = null;
+        this.beanNameCache.clear();
     }
 
     @Override

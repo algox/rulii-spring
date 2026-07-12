@@ -20,16 +20,24 @@ package org.rulii.spring.bind.load;
 import org.rulii.bind.Binding;
 import org.rulii.bind.Bindings;
 import org.rulii.bind.load.BindingLoader;
-import org.rulii.lib.spring.util.Assert;
+import org.rulii.util.RuleUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.util.Assert;
 
 import java.util.function.Supplier;
 
 /**
  * A class that implements BindingLoader interface to load bindings from a Spring application context.
- * It binds all beans from the given ListableBeanFactory into the provided Bindings object.
+ * It binds beans from the given ListableBeanFactory into the provided Bindings object.
+ *
+ * <p>Bindings are lazy: bean types are resolved from bean-definition metadata (no bean is
+ * instantiated by loading), and each binding's value is fetched from the factory on access.
+ * Bean names that are not valid rulii binding names (e.g. Spring-internal dotted names such
+ * as {@code org.springframework.context.annotation.internalConfigurationAnnotationProcessor})
+ * are skipped, as are definitions whose type cannot be determined without instantiation.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -43,7 +51,7 @@ public class SpringContextBindingLoader implements BindingLoader<ListableBeanFac
     }
 
     /**
-     * Loads all beans from the given ListableBeanFactory into the provided Bindings object.
+     * Loads bindable beans from the given ListableBeanFactory into the provided Bindings object.
      *
      * @param bindings the Bindings object to bind the beans into
      * @param factory the ListableBeanFactory containing the beans to load
@@ -56,10 +64,29 @@ public class SpringContextBindingLoader implements BindingLoader<ListableBeanFac
         LOGGER.debug("Loading Spring Context as Bindings.");
 
         for (String beanName : factory.getBeanDefinitionNames()) {
+            if (!RuleUtils.isValidName(beanName)) {
+                LOGGER.debug("Skipping bean [{}]: not a valid binding name.", beanName);
+                continue;
+            }
+
+            Class<?> type;
+            try {
+                // Metadata-only type resolution - never instantiates the bean.
+                type = factory.getType(beanName);
+            } catch (BeansException e) {
+                LOGGER.debug("Skipping bean [{}]: type cannot be determined ({}).", beanName, e.getMessage());
+                continue;
+            }
+
+            if (type == null) {
+                LOGGER.debug("Skipping bean [{}]: type cannot be determined without instantiation.", beanName);
+                continue;
+            }
+
             Supplier<Object> getter = () -> factory.getBean(beanName);
             // Bind the property
             bindings.bind(Binding.builder().with(beanName)
-                    .type(factory.getBean(beanName).getClass())
+                    .type(type)
                     .delegate(getter, null)
                     .editable(false)
                     .build());

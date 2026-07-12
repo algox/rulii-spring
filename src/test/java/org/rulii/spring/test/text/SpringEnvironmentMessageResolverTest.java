@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.rulii.spring.text.SpringEnvironmentMessageResolver;
+import org.springframework.context.support.StaticMessageSource;
 import org.springframework.core.env.Environment;
 
 import java.util.Locale;
@@ -80,5 +81,55 @@ public class SpringEnvironmentMessageResolverTest {
         SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment);
         resolver.resolve(Locale.ENGLISH, "test.key", "fallback");
         verify(environment).getProperty("test.key", "fallback");
+    }
+
+    @Test
+    public void testMessageSourceTakesPrecedenceAndIsLocaleAware() {
+        StaticMessageSource messageSource = new StaticMessageSource();
+        messageSource.addMessage("greeting", Locale.ENGLISH, "Hello");
+        messageSource.addMessage("greeting", Locale.FRENCH, "Bonjour");
+
+        SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment, messageSource);
+
+        assertEquals("Hello", resolver.resolve(Locale.ENGLISH, "greeting", "default"));
+        assertEquals("Bonjour", resolver.resolve(Locale.FRENCH, "greeting", "default"));
+        verifyNoInteractions(environment);
+    }
+
+    @Test
+    public void testEnvironmentFallbackWhenMessageSourceMisses() {
+        StaticMessageSource messageSource = new StaticMessageSource();
+        when(environment.getProperty("env.only", "default")).thenReturn("from-env");
+
+        SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment, messageSource);
+
+        assertEquals("from-env", resolver.resolve(Locale.ENGLISH, "env.only", "default"));
+    }
+
+    @Test
+    public void testNullCodeReturnsDefaultMessage() {
+        SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment);
+        assertEquals("fallback", resolver.resolve(Locale.ENGLISH, null, "fallback"));
+        verifyNoInteractions(environment);
+    }
+
+    @Test
+    public void testUnresolvablePlaceholderFallsBackToDefault() {
+        when(environment.getProperty("bad.placeholder", "default"))
+                .thenThrow(new IllegalArgumentException("Could not resolve placeholder 'min'"));
+
+        SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment);
+
+        assertEquals("default", resolver.resolve(Locale.ENGLISH, "bad.placeholder", "default"));
+    }
+
+    @Test
+    public void testNullLocaleUsesJvmDefaultForMessageSource() {
+        StaticMessageSource messageSource = new StaticMessageSource();
+        messageSource.addMessage("code", Locale.getDefault(), "resolved");
+
+        SpringEnvironmentMessageResolver resolver = new SpringEnvironmentMessageResolver(environment, messageSource);
+
+        assertEquals("resolved", resolver.resolve(null, "code", "default"));
     }
 }

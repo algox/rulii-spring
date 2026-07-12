@@ -22,22 +22,24 @@ import org.rulii.script.EvaluationException;
 import org.rulii.script.Script;
 import org.rulii.script.ScriptProcessor;
 import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.PropertyAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A {@link ScriptProcessor} implementation that evaluates Spring Expression Language (SpEL)
  * scripts within a Rulii {@link RuleContext}.
  *
- * <p>Evaluation is performed against a {@link StandardEvaluationContext} that exposes the
- * rule context's {@link org.rulii.bind.Bindings} as a named variable (e.g. {@code #ctx}),
- * and registers a {@link BindingAccessor} so that binding values can also be resolved
- * as bare property names on the {@code Bindings} object.</p>
+ * <p>Evaluation is performed against a {@link StandardEvaluationContext} whose root object
+ * is the rule context's {@link org.rulii.bind.Bindings}, with the same bindings also exposed
+ * as a named variable (e.g. {@code #ctx}). A {@link BindingAccessor} resolves binding names
+ * on the bindings object, and Spring's default reflective accessor remains registered so
+ * expressions can navigate into binding values. All of the following forms are equivalent:
+ * {@code age >= 18}, {@code #ctx.age >= 18}, {@code person.name}, {@code #ctx.person.name}.</p>
+ *
+ * <p><strong>Trust model:</strong> expressions run with the full power of
+ * {@link StandardEvaluationContext} — including {@code T()} type references, constructors,
+ * and static methods. Rule expressions are trusted code, exactly like Spring bean XML;
+ * never assemble them from untrusted user input.</p>
  *
  * <p>This processor is created by {@link SpelScriptProcessorFactory} and only handles
  * scripts of type {@link SpelScript}.</p>
@@ -50,7 +52,7 @@ import java.util.Map;
  */
 public class SpelScriptProcessor implements ScriptProcessor {
 
-    private static final List<PropertyAccessor> PROPERTY_ACCESSORS = List.of(new BindingAccessor());
+    private static final BindingAccessor BINDING_ACCESSOR = new BindingAccessor();
 
     private final String languageName;
     private final String bindingName;
@@ -110,19 +112,32 @@ public class SpelScriptProcessor implements ScriptProcessor {
         Assert.notNull(script, "script cannot be null.");
         Assert.notNull(ruleContext, "ruleContext cannot be null.");
 
-        EvaluationContext scriptContext = buildContext(ruleContext);
+        if (!(script instanceof SpelScript)) {
+            throw new EvaluationException(script.getScript(), "SpelScriptProcessor (language \"" + languageName
+                    + "\") can only evaluate SpelScript instances; received [" + script.getClass().getName() + "].");
+        }
+
         SpelScript<T> spelScript = (SpelScript<T>) script;
+        EvaluationContext scriptContext = buildContext(ruleContext);
+        Class<?> returnType = spelScript.getReturnType();
 
         try {
-            return (T) spelScript.getExpression().getValue(scriptContext);
+            // Apply SpEL type conversion only for concrete declared types: actions declare
+            // void (nothing to convert to) and Object means "whatever the expression yields".
+            if (returnType == null || returnType == Object.class || returnType == void.class || returnType == Void.class) {
+                return (T) spelScript.getExpression().getValue(scriptContext);
+            }
+            return (T) spelScript.getExpression().getValue(scriptContext, returnType);
         } catch (Exception e) {
             throw new EvaluationException(script.getScript(), e.getMessage(), e);
         }
     }
 
     /**
-     * Builds a {@link StandardEvaluationContext} that exposes the rule context's bindings
-     * as a named variable and registers a {@link BindingAccessor} for property-style access.
+     * Builds a {@link StandardEvaluationContext} rooted at the rule context's bindings.
+     * The bindings are also exposed as a named variable ({@link #getBindingsName()}), and a
+     * {@link BindingAccessor} is added ahead of the default reflective accessor so binding
+     * names resolve directly while binding values remain navigable as regular objects.
      *
      * @param ruleContext the rule context whose bindings will be exposed; must not be {@code null}
      * @return a configured SpEL {@link EvaluationContext}
@@ -130,13 +145,9 @@ public class SpelScriptProcessor implements ScriptProcessor {
     protected EvaluationContext buildContext(RuleContext ruleContext) {
         Assert.notNull(ruleContext, "ruleContext cannot be null.");
 
-        StandardEvaluationContext result = new StandardEvaluationContext();
-        result.setPropertyAccessors(PROPERTY_ACCESSORS);
-
-        Map<String, Object> vars = new HashMap<>();
-        vars.put(getBindingsName(), ruleContext.getBindings());
-
-        result.setVariables(vars);
+        StandardEvaluationContext result = new StandardEvaluationContext(ruleContext.getBindings());
+        result.addPropertyAccessor(BINDING_ACCESSOR);
+        result.setVariable(getBindingsName(), ruleContext.getBindings());
 
         return result;
     }

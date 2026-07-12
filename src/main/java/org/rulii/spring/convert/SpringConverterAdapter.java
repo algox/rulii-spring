@@ -25,10 +25,17 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Adapter class that implements the Converter interface to adapt Spring's ConversionService for conversion between objects.
  * This class provides methods to convert objects using the specified ConversionService.
+ *
+ * <p>Conversion failures are wrapped in rulii's {@link ConversionException} per the
+ * {@link Converter} contract. {@link TypeDescriptor}s are cached per declared {@link Type}
+ * (types from rule signatures are a small, stable set) to avoid per-call allocation on the
+ * parameter-resolution hot path.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -37,6 +44,7 @@ import java.lang.reflect.Type;
 public class SpringConverterAdapter implements Converter<Object, Object> {
 
     private final ConversionService conversionService;
+    private final Map<Type, TypeDescriptor> descriptorCache = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new SpringConverterAdapter with the specified ConversionService.
@@ -61,17 +69,30 @@ public class SpringConverterAdapter implements Converter<Object, Object> {
 
     @Override
     public boolean canConvert(Type type1, Type type2) {
-        TypeDescriptor typeDescriptor1 = new ResolvableTypeDescriptor(ResolvableType.forType(type1));
-        TypeDescriptor typeDescriptor2 = new ResolvableTypeDescriptor(ResolvableType.forType(type2));
-        return conversionService.canConvert(typeDescriptor1, typeDescriptor2);
+        return conversionService.canConvert(descriptor(type1), descriptor(type2));
     }
 
     @Override
     public Object convert(Object source, Type type) throws ConversionException {
         if (source == null) return null;
-        TypeDescriptor sourceType = TypeDescriptor.forObject(source);
-        TypeDescriptor targetType = new ResolvableTypeDescriptor(ResolvableType.forType(type));
-        return conversionService.convert(source, sourceType, targetType);
+
+        try {
+            return conversionService.convert(source, TypeDescriptor.forObject(source), descriptor(type));
+        } catch (org.springframework.core.convert.ConversionException e) {
+            throw new ConversionException(e, source, source.getClass(), type);
+        }
+    }
+
+    /**
+     * Returns a cached {@link TypeDescriptor} for the given declared type, preserving
+     * full generic information via {@link ResolvableType}.
+     *
+     * @param type the declared type
+     * @return the descriptor
+     */
+    private TypeDescriptor descriptor(Type type) {
+        return descriptorCache.computeIfAbsent(type,
+                t -> new TypeDescriptor(ResolvableType.forType(t), null, null));
     }
 
     @Override
