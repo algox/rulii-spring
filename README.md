@@ -3,7 +3,7 @@
 
 # _rulii-spring_
 **Spring Boot integration for the [rulii](https://github.com/algox/rulii) rule engine** <br/>
-<sub> _Auto-configuration_ &middot; _Rule discovery via @RuleScan_ &middot; _Spring bean injection in Rules_ &middot; _Externalized messages_ &middot; _Spring type conversion_ </sub>
+<sub> _Auto-configuration_ &middot; _Rule discovery via @RuleScan_ &middot; _Spring bean injection in Rules_ &middot; _SpEL scripting_ &middot; _Rules, RuleSets & RuleFlows in XML_ &middot; _Externalized messages_ &middot; _Spring type conversion_ </sub>
 
 ---
 
@@ -24,6 +24,8 @@
 - [Spring Beans in Rules](#spring-beans-in-rules)
 - [Building RuleSets](#building-rulesets)
 - [Using RuleSets in Services](#using-rulesets-in-services)
+- [SpEL Scripting](#spel-scripting)
+- [Rules, RuleSets & RuleFlows in XML](#rules-rulesets--ruleflows-in-xml)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 
@@ -47,6 +49,9 @@ reading this guide.
 - Spring-managed beans injected directly into rule classes
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
+- Spring Expression Language (SpEL) as a rule scripting language
+- Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
+- `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 
 ---
 
@@ -210,6 +215,167 @@ public class OrderService {
 
 ---
 
+## SpEL Scripting
+
+rulii-spring registers the **Spring Expression Language (SpEL)** as a rulii scripting language under the
+name `el`. Conditions, actions, and functions can then be written as expressions instead of Java methods.
+Bindings are exposed through the `#ctx` variable:
+
+```java
+#ctx.age >= 18                 // condition — read a binding
+#ctx.approved = true           // action — write to a binding (binds it if absent)
+#ctx.total * (1 - #ctx.rate)   // function — compute a value
+```
+
+A few things worth knowing:
+
+- **Absent bindings read as `null`** — guards like `#ctx.middleName != null` work without pre-binding.
+- **Property placeholders**: script text may contain `${property:default}` placeholders, resolved once at
+  startup against the Spring `Environment` with the same semantics as `@Value` — a missing key without a
+  default fails startup naming the placeholder, and `\${...}` escapes to a literal. Disable with
+  `rulii.scripts.resolvePlaceholders=false`.
+- **Trust model**: SpEL expressions run with the full power of the evaluation context. Treat rule
+  expressions as trusted code (the same trust level as Spring bean XML) — never assemble them from user input.
+
+```xml
+<r:rule name="MinTotalRule" given="#ctx.total >= ${order.minTotal:100}"/>
+```
+
+SpEL is the default choice in XML rule files, but any JSR-223 language registered with rulii's
+`ScriptProcessorManager` (e.g. JavaScript, Groovy) can be used as well.
+
+---
+
+## Rules, RuleSets & RuleFlows in XML
+
+Rules do not have to be Java classes. The `rulii` XML namespace lets you externalize entire rule files —
+rules, validation rules, rulesets, and ruleflows — with SpEL expressions for the logic:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- Default scripting language for every expression in this file -->
+    <r:scripting defaultLanguage="el"/>
+
+</beans>
+```
+
+### Rules
+
+```xml
+<r:rule name="AgeCheckRule" description="Applicant must be an adult">
+    <r:pre-condition>#ctx.age != null</r:pre-condition>
+    <r:given>#ctx.age >= 18</r:given>
+    <r:then>#ctx.eligible = true</r:then>
+    <r:otherwise>#ctx.eligible = false</r:otherwise>
+</r:rule>
+```
+
+Simple rules collapse to a one-liner using the equivalent attribute forms:
+
+```xml
+<r:rule name="ApproveRule" given="#ctx.total >= 100" then="#ctx.approved = true" otherwise="#ctx.approved = false"/>
+```
+
+### Validation rules
+
+All **37 predefined validators** (`notNull`, `email`, `min`, `max`, `pattern`, …) are available directly
+as XML elements, and `<r:validationRule>` wraps custom checks:
+
+```xml
+<r:notNull name="NameRequiredRule" binding="name"/>
+<r:min name="MinAgeRule" binding="age" min="${age.rule.min:18}"/>
+<r:email name="EmailRule" binding="email"/>
+
+<r:validationRule name="BalancedRule" errorCode="account.balanced" given="#ctx.debits == #ctx.credits"/>
+```
+
+### RuleSets
+
+Group rules — declared in the same file or referenced by bean name — with optional lifecycle hooks:
+
+```xml
+<r:ruleset name="ApplicantChecks" pre-condition="#ctx.applicant != null">
+    <r:rules>
+        <r:bean-ref name="AgeCheckRule"/>
+        <r:bean-ref name="NameRequiredRule"/>
+        <r:bean-ref name="EmailRule"/>
+    </r:rules>
+</r:ruleset>
+```
+
+### RuleFlows
+
+The full `RuleFlow.builder()` DSL is available in XML — sequential and async rule execution,
+conditionals, loops, scopes, exception handlers, and a returning value:
+
+```xml
+<r:ruleflow name="OrderFlow">
+    <r:param name="total" type="java.lang.Integer"/>
+
+    <r:bind name="doubled">#ctx.total * 2</r:bind>
+
+    <r:when condition="#ctx.total >= ${order.flowMin:100}">
+        <r:then>
+            <r:bind name="status" value="approved"/>
+            <r:run name="DiscountRule"/>          <!-- RuleRegistry lookup at execution time -->
+        </r:then>
+        <r:otherwise>
+            <r:bind name="status" value="rejected"/>
+            <r:exit/>
+        </r:otherwise>
+    </r:when>
+
+    <r:for-each item="n" source="{1, 2, 3}">
+        <r:execute>#ctx.sum = #ctx.sum + #ctx.n</r:execute>
+    </r:for-each>
+
+    <r:on-exception exception="java.lang.Exception">
+        <r:execute>#ctx.failed = true</r:execute>
+    </r:on-exception>
+
+    <r:finalizer>#ctx.done = true</r:finalizer>
+    <r:returning>#ctx.status</r:returning>
+</r:ruleflow>
+```
+
+Async execution is built in: `<r:async-run>` fans work out, `<r:then-run>` chains continuations, and
+`<r:await>` / `<r:await-all>` / `<r:await-any>` (with `timeout` + `unit`) join the results. Custom
+`RuleFlowCommand` beans plug in via `<r:command ref="..."/>`.
+
+### Loading XML rule files
+
+Point `@RuleScan` at the folder — every `*.xml` file in it is loaded and its beans registered:
+
+```java
+@Configuration
+@RuleScan(xmlLocations = "classpath:rules/pricing/")
+public class RuleConfig {
+}
+```
+
+XML-declared rules are regular Spring beans: inject them directly, or look them up through the
+`RuleRegistry` just like scanned `@Rule` classes:
+
+```java
+Rule rule          = ruleRegistry.getRule("AgeCheckRule");
+RuleSet<?> ruleSet = ruleRegistry.getRuleSet("ApplicantChecks");
+RuleFlow<?> flow   = ruleRegistry.getRuleFlow("OrderFlow");
+```
+
+> The `/new-xml-ruleset` and `/new-xml-ruleflow` Claude Code skills (below) cover the complete
+> element grammar, including the parts not shown here.
+
+---
+
 ## Claude Code Skills
 
 This project ships with [Claude Code](https://claude.ai/code) skills that assist with common development tasks.
@@ -221,6 +387,7 @@ If you have Claude Code installed, invoke any skill with its slash command from 
 | New RuleSet | `/new-ruleset` | Full RuleSet builder API — lifecycle hooks, input params, stop conditions, `.validating()` mode, and Spring `@Bean` wiring with `@RuleScan` and `@Qualifier` |
 | New Validation Rule | `/new-validation-rule` | Creates a custom `ValueValidationRule` with its companion builder — covers supported types, `isValid()` logic, violation customisation, and the full checklist |
 | New XML RuleSet | `/new-xml-ruleset` | Declares rules, rulesets, and predefined validators in Spring XML using the rulii namespace — covers SpEL expressions, lifecycle hooks, property placeholders, and `@RuleScan` loading |
+| New XML RuleFlow | `/new-xml-ruleflow` | Declares RuleFlows in Spring XML — covers the command grammar (`run`/`bind`/`when`/`for-each`/`scope`), async execution, exception handling, custom commands, and terse attribute forms |
 | Write Test | `/write-test` | JUnit 5 + Spring Boot test patterns — `@SpringBootTest` setup, `@RuleScan` wiring, PASS/FAIL/SKIP scenarios, XML rule testing, and Spring message resolution |
 | Debug Rule | `/debug-rule` | Diagnostic guide for rules that produce the wrong result — covers SKIP (type mismatch), missing bindings, Spring discovery failures, `@Value` injection issues, and tracing |
 
@@ -234,6 +401,7 @@ cp -r <path-to-rulii-spring>/.claude/skills/new-rule             .claude/skills/
 cp -r <path-to-rulii-spring>/.claude/skills/new-ruleset           .claude/skills/
 cp -r <path-to-rulii-spring>/.claude/skills/new-validation-rule   .claude/skills/
 cp -r <path-to-rulii-spring>/.claude/skills/new-xml-ruleset       .claude/skills/
+cp -r <path-to-rulii-spring>/.claude/skills/new-xml-ruleflow      .claude/skills/
 cp -r <path-to-rulii-spring>/.claude/skills/write-test            .claude/skills/
 cp -r <path-to-rulii-spring>/.claude/skills/debug-rule            .claude/skills/
 ```
