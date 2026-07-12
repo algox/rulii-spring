@@ -50,6 +50,7 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.ConversionService;
@@ -211,6 +212,26 @@ public class RuleConfig {
      * @param factories the ScriptProcessorFactory beans to register
      * @return the singleton ScriptProcessorManager instance
      */
+    /**
+     * Installs the {@code ${property:default}} script-text resolver on the process-wide
+     * {@link ScriptProcessorManager}. Registered as a static {@code BeanFactoryPostProcessor}
+     * bean so the resolver is active before ANY singleton instantiates — XML-declared rules
+     * compile their script text during bean creation.
+     *
+     * <p>Overridable like every other default: define your own (static)
+     * {@link ScriptTextResolverConfigurer} bean, or disable resolution entirely with
+     * {@code rulii.scripts.resolvePlaceholders=false}.
+     *
+     * @return the configurer
+     * @see ScriptTextResolverConfigurer
+     */
+    @Bean
+    @ConditionalOnMissingBean(ScriptTextResolverConfigurer.class)
+    @ConditionalOnProperty(name = "rulii.scripts.resolvePlaceholders", havingValue = "true", matchIfMissing = true)
+    public static ScriptTextResolverConfigurer scriptTextResolverConfigurer() {
+        return new ScriptTextResolverConfigurer();
+    }
+
     @Bean(BeanNames.SCRIPT_MANAGER)
     @ConditionalOnMissingBean(ScriptProcessorManager.class)
     public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactory> factories) {

@@ -35,10 +35,14 @@
 
         The expression can be provided in two ways:
           1. As the text body of the element:   <given>order.total > 100</given>
-          2. As a script attribute:             <given script="order.total > 100"/>
+          2. As an expr attribute:              <given expr="order.total > 100"/>
 
         An optional language attribute overrides the default scripting language
         configured via <rulii:scripting>.
+
+        Script text may contain Spring environment placeholders, resolved once at
+        startup with @Value semantics: ${key}, ${key:default}, \${...} for a literal.
+        Example: <given>order.total >= ${order.minTotal:100}</given>
     -->
 
     <!-- ==================== Condition Types ==================== -->

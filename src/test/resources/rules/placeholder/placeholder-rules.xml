@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- ${order.minTotal:100} resolves from the Spring environment (test sets 50). -->
+    <r:rule name="MinTotalRule" description="Threshold comes from configuration">
+        <r:given>#ctx.total >= ${order.minTotal:100}</r:given>
+    </r:rule>
+
+    <!-- The key is absent; the :default kicks in, exactly like @Value. -->
+    <r:rule name="DefaultedRule" description="Falls back to the placeholder default">
+        <r:given>#ctx.age >= ${placeholder.absent:18}</r:given>
+    </r:rule>
+
+    <!-- \${...} escapes to a literal ${literal} string, untouched by resolution. -->
+    <r:rule name="EscapedRule" description="Escaped placeholder stays literal">
+        <r:given>#ctx.name == '\${literal}'</r:given>
+    </r:rule>
+
+</beans>
