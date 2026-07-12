@@ -197,6 +197,13 @@
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
+            <!-- Terse forms of the condition/action child elements (default scripting
+                 language; declaring both the attribute and the child element is a parse
+                 error). The then attribute covers the single-action case only. -->
+            <attribute name="given" type="string"/>
+            <attribute name="pre-condition" type="string"/>
+            <attribute name="then" type="string"/>
+            <attribute name="otherwise" type="string"/>
         </complexType>
     </element>
 
@@ -257,6 +264,8 @@
             <attribute name="severity" type="rulii:severityType" default="ERROR"/>
             <attribute name="errorMessage" type="string"/>
             <attribute name="defaultMessage" type="string"/>
+            <!-- Terse form of the <given> child (default scripting language). -->
+            <attribute name="given" type="string"/>
         </complexType>
     </element>
 
@@ -747,6 +756,263 @@
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
             <attribute name="validating" type="boolean" default="false"/>
+            <!-- Terse forms of the condition/action child elements (default scripting
+                 language; declaring both the attribute and the child element is a parse
+                 error). -->
+            <attribute name="pre-condition" type="string"/>
+            <attribute name="stop-condition" type="string"/>
+            <attribute name="initializer" type="string"/>
+            <attribute name="finalizer" type="string"/>
+        </complexType>
+    </element>
+
+    <!-- ==================== RuleFlow Element ==================== -->
+
+    <!--
+        Declares a RuleFlow — a pipeline of commands composing Rules, RuleSets, and other
+        RuleFlows, mirroring the rulii RuleFlow.builder() DSL. Script expressions substitute
+        the builder's lambdas everywhere, using the same conventions as <rule>/<ruleset>
+        (expr attribute or element body, optional language attribute, ${property:default}
+        placeholders).
+
+          <rulii:ruleflow name="checkoutFlow">
+              <param name="order" type="com.example.Order"/>
+              <bind name="attempts" value="0"/>
+              <run name="ValidateOrderRule" as="valid"/>
+              <when>
+                  <condition>#ctx.valid == true</condition>
+                  <then>
+                      <run bean-ref="pricingRuleSet"/>
+                  </then>
+                  <otherwise>
+                      <exit/>
+                  </otherwise>
+              </when>
+              <returning>#ctx.total</returning>
+          </rulii:ruleflow>
+
+        Run/async-run targets — exactly one of (parser-enforced):
+          bean-ref — a Spring bean (Rule, RuleSet, or RuleFlow), resolved at wiring time
+          name     — a RuleRegistry lookup by name, resolved at execution time
+          class    — a RuleRegistry lookup by rule class, resolved at execution time
+
+        Java-only DSL features (no XML form): context(Consumer) inline lambdas — use
+        <context ref="..."/> with a Consumer<RuleContextBuilder> bean; asyncRun
+        withContext(RuleContext) custom contexts.
+    -->
+
+    <!-- A step-scoped literal parameter for run/apply commands. -->
+    <complexType name="ruleFlowWithParamType">
+        <attribute name="name" type="string" use="required"/>
+        <attribute name="value" type="string" use="required"/>
+    </complexType>
+
+    <!--
+        An exception handler. The handler body is a command sequence; the caught exception
+        is bound as "ex" for the duration of the body (e.g. #ctx.ex.message).
+    -->
+    <complexType name="ruleFlowHandlerType">
+        <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+        <attribute name="exception" type="string" default="java.lang.Exception"/>
+    </complexType>
+
+    <!-- A nested command sequence (when/then, otherwise, scope, then-run bodies). -->
+    <complexType name="ruleFlowBodyType">
+        <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+    </complexType>
+
+    <simpleType name="asyncContextModeType">
+        <restriction base="string">
+            <enumeration value="shared"/>
+            <enumeration value="immutable"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="timeUnitType">
+        <restriction base="string">
+            <enumeration value="nanoseconds"/>
+            <enumeration value="microseconds"/>
+            <enumeration value="milliseconds"/>
+            <enumeration value="seconds"/>
+            <enumeration value="minutes"/>
+            <enumeration value="hours"/>
+            <enumeration value="days"/>
+        </restriction>
+    </simpleType>
+
+    <!-- The recursive command grammar shared by the flow body and every container body. -->
+    <group name="ruleFlowCommands">
+        <choice>
+
+            <!-- bind: exactly one of value / ref / script expression (parser-enforced). -->
+            <element name="bind">
+                <complexType mixed="true">
+                    <attribute name="name" type="string" use="required"/>
+                    <attribute name="scope" type="string"/>
+                    <attribute name="value" type="string"/>
+                    <attribute name="ref" type="string"/>
+                    <attribute name="expr" type="string"/>
+                    <attribute name="language" type="string"/>
+                </complexType>
+            </element>
+
+            <element name="run">
+                <complexType>
+                    <sequence>
+                        <element name="with" type="rulii:ruleFlowWithParamType" minOccurs="0" maxOccurs="unbounded"/>
+                        <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
+                    </sequence>
+                    <attribute name="bean-ref" type="string"/>
+                    <attribute name="name" type="string"/>
+                    <attribute name="class" type="string"/>
+                    <attribute name="as" type="string"/>
+                    <attribute name="scope" type="string"/>
+                </complexType>
+            </element>
+
+            <!-- apply: a Function command; the script is the expr attribute or direct text. -->
+            <element name="apply">
+                <complexType mixed="true">
+                    <sequence>
+                        <element name="with" type="rulii:ruleFlowWithParamType" minOccurs="0" maxOccurs="unbounded"/>
+                        <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
+                    </sequence>
+                    <attribute name="as" type="string"/>
+                    <attribute name="scope" type="string"/>
+                    <attribute name="expr" type="string"/>
+                    <attribute name="language" type="string"/>
+                </complexType>
+            </element>
+
+            <!-- execute: an Action command; the script is the expr attribute or direct text. -->
+            <element name="execute">
+                <complexType mixed="true">
+                    <sequence>
+                        <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
+                    </sequence>
+                    <attribute name="expr" type="string"/>
+                    <attribute name="language" type="string"/>
+                </complexType>
+            </element>
+
+            <element name="async-run">
+                <complexType>
+                    <sequence>
+                        <element name="then-run" minOccurs="0">
+                            <complexType>
+                                <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+                                <attribute name="result" type="string" use="required"/>
+                            </complexType>
+                        </element>
+                        <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
+                    </sequence>
+                    <attribute name="bean-ref" type="string"/>
+                    <attribute name="name" type="string"/>
+                    <attribute name="class" type="string"/>
+                    <attribute name="as" type="string"/>
+                    <attribute name="context-mode" type="rulii:asyncContextModeType" default="shared"/>
+                </complexType>
+            </element>
+
+            <element name="await">
+                <complexType>
+                    <attribute name="name" type="string" use="required"/>
+                    <attribute name="timeout" type="long"/>
+                    <attribute name="unit" type="rulii:timeUnitType" default="seconds"/>
+                </complexType>
+            </element>
+
+            <element name="await-all">
+                <complexType>
+                    <attribute name="names" type="string" use="required"/>
+                    <attribute name="timeout" type="long"/>
+                    <attribute name="unit" type="rulii:timeUnitType" default="seconds"/>
+                </complexType>
+            </element>
+
+            <element name="await-any">
+                <complexType>
+                    <attribute name="names" type="string" use="required"/>
+                    <attribute name="timeout" type="long"/>
+                    <attribute name="unit" type="rulii:timeUnitType" default="seconds"/>
+                </complexType>
+            </element>
+
+            <element name="when">
+                <complexType>
+                    <sequence>
+                        <element name="condition" type="rulii:conditionType" minOccurs="0"/>
+                        <element name="then" type="rulii:ruleFlowBodyType"/>
+                        <element name="otherwise" type="rulii:ruleFlowBodyType" minOccurs="0"/>
+                    </sequence>
+                    <!-- Terse form of the <condition> child (default scripting language;
+                         exactly one of the two forms is required). -->
+                    <attribute name="condition" type="string"/>
+                </complexType>
+            </element>
+
+            <element name="for-each">
+                <complexType>
+                    <sequence>
+                        <element name="source" type="rulii:functionType" minOccurs="0"/>
+                        <element name="stop-condition" type="rulii:conditionType" minOccurs="0"/>
+                        <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+                    </sequence>
+                    <attribute name="item" type="string" use="required"/>
+                    <!-- Terse forms of the <source>/<stop-condition> children (default
+                         scripting language; exactly one source form is required). -->
+                    <attribute name="source" type="string"/>
+                    <attribute name="stop-condition" type="string"/>
+                </complexType>
+            </element>
+
+            <element name="scope">
+                <complexType>
+                    <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+                    <attribute name="name" type="string"/>
+                </complexType>
+            </element>
+
+            <element name="exit">
+                <complexType/>
+            </element>
+
+            <!-- Escape hatch: a user-supplied org.rulii.ruleflow.command.RuleFlowCommand bean.
+                 With a nested body the bean must be a ContainerCommand (retry, parallel, ...)
+                 and receives the body commands; container beans referenced from more than one
+                 <command> must be @Scope("prototype") - setBody() mutates the bean. -->
+            <element name="command">
+                <complexType>
+                    <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+                    <attribute name="ref" type="string" use="required"/>
+                </complexType>
+            </element>
+
+        </choice>
+    </group>
+
+    <element name="ruleflow">
+        <complexType>
+            <sequence>
+                <!-- Escape hatch: a Consumer<RuleContextBuilder> bean; must be the first element. -->
+                <element name="context" minOccurs="0">
+                    <complexType>
+                        <attribute name="ref" type="string" use="required"/>
+                    </complexType>
+                </element>
+                <element name="param" type="rulii:paramType" minOccurs="0" maxOccurs="unbounded"/>
+                <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
+                <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
+                <element name="finalizer" type="rulii:actionType" minOccurs="0"/>
+                <element name="returning" type="rulii:functionType" minOccurs="0"/>
+            </sequence>
+            <attribute name="name" type="string" use="required"/>
+            <attribute name="description" type="string"/>
+            <!-- Terse forms of the finalizer/returning child elements (default scripting
+                 language; declaring both the attribute and the child element is a parse
+                 error). -->
+            <attribute name="finalizer" type="string"/>
+            <attribute name="returning" type="string"/>
         </complexType>
     </element>
 

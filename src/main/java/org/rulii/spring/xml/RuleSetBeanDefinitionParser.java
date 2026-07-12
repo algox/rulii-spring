@@ -86,13 +86,13 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
             builder.addPropertyValue("params", inputParameterDefinitions);
         }
 
-        // <pre-condition>
-        Element preCond = DomUtils.getChildElementByTagName(element, "pre-condition");
-        if (preCond != null) builder.addPropertyValue("preCondition", ScriptExpression.parse(preCond, parserContext));
+        // <pre-condition> child or pre-condition="..." attribute
+        ScriptExpression preCondition = ScriptExpression.fromAttributeOrChild(element, "pre-condition", parserContext);
+        if (preCondition != null) builder.addPropertyValue("preCondition", preCondition);
 
-        // <initializer>
-        Element init = DomUtils.getChildElementByTagName(element, "initializer");
-        if (init != null) builder.addPropertyValue("initializer", ScriptExpression.parse(init, parserContext));
+        // <initializer> child or initializer="..." attribute
+        ScriptExpression initializer = ScriptExpression.fromAttributeOrChild(element, "initializer", parserContext);
+        if (initializer != null) builder.addPropertyValue("initializer", initializer);
 
         // <rules>
         Element rules = DomUtils.getChildElementByTagName(element, "rules");
@@ -101,16 +101,16 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
             builder.addPropertyValue("rules", ruleRefs);
         }
 
-        // <stop-condition>
-        Element stop = DomUtils.getChildElementByTagName(element, "stop-condition");
-        if (stop != null) {
-            builder.addPropertyValue("stopCondition", ScriptExpression.parse(stop, parserContext));
+        // <stop-condition> child or stop-condition="..." attribute
+        ScriptExpression stopCondition = ScriptExpression.fromAttributeOrChild(element, "stop-condition", parserContext);
+        if (stopCondition != null) {
+            builder.addPropertyValue("stopCondition", stopCondition);
         }
 
-        // <finalizer>
-        Element finalizer = DomUtils.getChildElementByTagName(element, "finalizer");
+        // <finalizer> child or finalizer="..." attribute
+        ScriptExpression finalizer = ScriptExpression.fromAttributeOrChild(element, "finalizer", parserContext);
         if (finalizer != null) {
-            builder.addPropertyValue("finalizer", ScriptExpression.parse(finalizer, parserContext));
+            builder.addPropertyValue("finalizer", finalizer);
         }
 
         // <result-extractor>
@@ -257,8 +257,11 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
         return new RuntimeBeanReference(beanName);
     }
 
-    /** Parses a {@code <param>} element into a {@link RuleSetFactoryBean.InputParameterDefinition}. */
-    private RuleSetFactoryBean.InputParameterDefinition parseParam(Element el, ParserContext parserContext) {
+    /**
+     * Parses a {@code <param>} element into a {@link RuleSetFactoryBean.InputParameterDefinition}.
+     * Shared with {@link RuleFlowBeanDefinitionParser}, which uses the identical param grammar.
+     */
+    static RuleSetFactoryBean.InputParameterDefinition parseParam(Element el, ParserContext parserContext) {
         String paramName = el.getAttribute("name");
         String type = el.getAttribute("type");
         boolean required = RuliiNamespaceHandler.parseBooleanAttribute(el.getAttribute("required"), true);

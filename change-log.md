@@ -1,5 +1,102 @@
 # Changelog
 
+## [2.0.0]
+
+### rulii 2.0 Upgrade
+
+- Built against rulii `2.0.0` — registry null-return contract, executor service support, and tracer listener wiring adopted throughout
+- New `rulii.executorService` bean — bounded thread pool (queue of 1000, caller-runs policy) used for async rule/flow execution; tied to the context lifecycle. **Overridden by NAME**: define a bean named `rulii.executorService` (unrelated `ExecutorService` beans are deliberately ignored)
+- `Tracer` auto-configuration registers `RuliiListener`, `RuleListener`, `RuleSetListener`, and `RuleFlowListener` beans found in the context; each listener bean is registered exactly once even when it implements multiple listener interfaces
+
+---
+
+### New Feature: RuleFlow Integration (`org.rulii.spring.xml`, `org.rulii.spring.registry`)
+
+RuleFlows are first-class citizens of the Spring integration:
+
+- `SpringRuleRegistry.getRuleFlow(name)` / `getRuleFlows()` — flows declared as beans are discoverable like rules and rulesets
+- Registry lookups inside flows (`run(nameInRegistry)` / `run(Class)`) resolve against the Spring registry at execution time; `asyncRun` uses the Spring-configured executor
+- **Full `<r:ruleflow>` XML namespace** mirroring the `RuleFlow.builder()` DSL — script expressions substitute the builder's lambdas:
+  - Commands: `bind` (literal `value`, Spring `ref`, or script expression), `run` / `async-run`, `apply`, `execute`, `when`/`then`/`otherwise`, `for-each` (with `source` and optional `stop-condition`), `scope`, `exit`, `await` / `await-all` / `await-any` (`names="a,b"`, `timeout` + `unit`), `then-run` continuations, `on-exception` handlers (step-level and flow-level; the caught exception is bound as `ex`), `finalizer`, `returning`
+  - Run targets — exactly one of: `bean-ref` (Spring bean, resolved at wiring time), `name` (RuleRegistry lookup at execution time), `class` (registry lookup by rule class at execution time)
+  - `async-run` supports `context-mode` (`shared` | `immutable`)
+  - Escape hatches: `<r:context ref="..."/>` (a `Consumer<RuleContextBuilder>` bean) and `<r:command ref="..."/>` (a custom `RuleFlowCommand` bean; with a nested command body the bean must be a `ContainerCommand` — retry, parallel, etc. — and receives the parsed body; reusing one container instance for several bodies fails fast, use `@Scope("prototype")`)
+  - Java-only (no XML form): inline `context(...)` lambdas and `asyncRun(...).withContext(RuleContext)`
+- New types: `RuleFlowFactoryBean`, `RuleFlowBeanDefinitionParser`, `RuleFlowCommandDefinition`
+- Note: flow bindings live in the flow's own scope, which is removed after execution — export observable state via `#ctx.x = ...` writes to pre-bound bindings or via `returning`
+
+---
+
+### New Feature: Environment Placeholders in Script Text
+
+- Script text — any language, XML-declared or programmatic `Script.builder()` — may contain `${property:default}` placeholders, resolved once at compile time against the Spring environment with `@Value` semantics: `:default` fallbacks, fail-fast on a missing key (naming the placeholder), `\${...}` escaping
+- Wired by `ScriptTextResolverConfigurer` (a `BeanFactoryPostProcessor`, active before any singleton instantiates); resolution delegates to the bean factory's embedded value resolver with an `Environment` fallback
+- Overridable: subclass `ScriptTextResolverConfigurer` (override `createResolver`, register as a static `@Bean`); disable entirely with `rulii.scripts.resolvePlaceholders=false`
+- Caveat: languages where `${}` is native syntax (Groovy GStrings) need escaping
+
+---
+
+### New Feature: Terse Expression Attributes (XML)
+
+Condition, single-action, and function child elements now have equivalent attributes — a simple rule collapses to a one-liner:
+
+```xml
+<r:rule name="ApproveRule" given="#ctx.total >= 100"
+        then="#ctx.approved = true" otherwise="#ctx.approved = false"/>
+```
+
+- `given` / `pre-condition` / `then` / `otherwise` on `<r:rule>`; `given` on `<r:validationRule>`; `pre-condition` / `stop-condition` / `initializer` / `finalizer` on `<r:ruleset>`; `condition` on ruleflow `<r:when>`; `source` / `stop-condition` on `<r:for-each>`; `finalizer` / `returning` on `<r:ruleflow>`
+- The attribute form uses the file's default scripting language (`language` overrides need the element form); declaring both forms is a parse error; the `then` attribute covers the single-action case only
+
+---
+
+### Correctness & Hardening Pass (all packages)
+
+#### `@RuleScan` / Auto-Configuration
+- Classpath scanning honors the running application's `Environment` and `ResourceLoader` — `@Profile` / `@Conditional` on rule classes are respected (class scan and XML `<beans profile="...">` sections alike)
+- `xmlLocations` accepts three forms — folder (`classpath:rules/pricing/`, upgraded to `classpath*:`), explicit file (fails fast when missing), and pattern (used as-is)
+- `xmlLocations`-only `@RuleScan` is truly XML-only (no silent scan of the config class's package); a bare `@RuleScan` — or direct `@Import(RuleRegistrar.class)` — falls back to the importing class's package
+- Rule-name collisions fail fast with both class names and an `@Rule(name=...)` remedy; the same class rediscovered via overlapping packages is skipped
+- Multiple `@RuleScan` configurations merge into a single injectable `RuleRegistrarMetaInfo` (now `List<String>`-based with value semantics)
+- An application-supplied `ObjectFactory` bean is honored by scanned rules regardless of its bean name
+
+#### XML Namespace
+- `spring.schemas` maps the `https://` schema URL — validation resolves the bundled XSD offline (no network fetch at startup)
+- Duplicate inline rule names inside rulesets fail at parse time with the XML location and a `<bean-ref>` remedy (previously the wrong rule silently ran)
+- `<r:scripting defaultLanguage="...">` is scoped to its file and position-independent (previously leaked across files in parse order)
+- Empty expressions and missing validator value sources are reported at parse time with the file/element location
+- Predefined validators accept the documented text-body form (`<r:email>#ctx.email</r:email>`); child-element text (e.g. `<r:item>`) is never mistaken for an expression
+- `xs:boolean` attributes honor the full lexical space (`caseSensitive="1"`, `required="1"`)
+- `<r:class-ref>` classes load lazily via the container's bean class loader
+- Inline and top-level `<r:rule>`/`<r:validationRule>` share one parse routine and cannot drift; the 37 predefined validator elements are driven by a single list (`PredefinedValidationRuleFactoryBean.TYPES`)
+
+#### SpEL Scripting
+- Property navigation into binding values works (`#ctx.person.name`, not just `getName()`), and bare-name expressions resolve against the bindings root (`order.total >= 100`)
+- Absent bindings read as `null` consistently — guard expressions like `#ctx.x != null` are reliable
+- Reads carry the binding's declared type (generics-aware conversion); the declared script return type is applied via SpEL conversion
+- Custom-named `SpelScriptProcessorFactory` instances compile scripts under their own language name; `isAvailable()` reports `false` when `spring-expression` is absent
+- A wrong-language script produces a diagnostic `EvaluationException` instead of a raw `ClassCastException`
+- Trust model documented: expressions run with full `StandardEvaluationContext` power — treat rule expressions as trusted code
+
+#### Service Adapters / `RuleConfig`
+- **Converter precedence**: custom rulii `Converter` beans → the Spring `ConversionService` bridge → rulii's built-in defaults — application-registered Spring converters are finally honored for types the built-ins also cover; toggle key fixed to `rulii.converters.registerDefaults`
+- `SpringRuleRegistry`: cached per-type bean-name lookups (no more full context scans per lookup), parent-context-aware enumeration, metadata-based type checks, `getRuleFlows()` support
+- `SpringObjectFactory`: honors `isUseCache` (stateless strategies created once, not per execution) and wraps Spring failures in `UnrulyException` per the contract
+- `SpringEnvironmentMessageResolver`: `MessageSource`-first (locale-aware, standard i18n bundles) with `Environment` fallback; null-code and unresolvable-placeholder safe
+- `SpringConverterAdapter`: Spring conversion failures wrapped in rulii's `ConversionException`; `TypeDescriptor`s cached
+- `SpringContextBindingLoader`: works against real contexts — resolves types from metadata (never instantiates; `@Lazy` safe) and skips non-bindable bean names
+- Optional `Clock` and `Locale` beans are honored by `ruleContextOptions` (deterministic time in tests)
+
+### Breaking Changes
+- `RuleRegistrarMetaInfo` components changed from `String[]` to `List<String>` (value-based equality)
+- `xmlLocations`-only `@RuleScan` no longer scans the config class's package
+- Converter lookup order changed (Spring `ConversionService` now wins over rulii built-ins for pairs both handle)
+- `SpringConverterAdapter` throws rulii `ConversionException` instead of Spring's conversion exceptions
+- `ResolvableTypeDescriptor` removed (Spring's `TypeDescriptor(ResolvableType, ...)` constructor is public)
+- Registry enumeration (`getRules()` etc.) now includes ancestor bean factories, matching by-name lookups
+
+---
+
 ## [1.2.0]
 
 ### Spring Expression Language (SpEL) Scripting Support (`org.rulii.spring.script.el`)
@@ -27,13 +124,13 @@
 - `RuleBeanDefinitionParser` — parses `<r:rule>` elements; supports `pre-condition`, `given`, `then` (repeatable), and `otherwise` child elements containing script expressions
 - `RuleSetBeanDefinitionParser` — parses `<r:ruleset>` elements; supports typed `<r:param>` declarations with optional `<r:default-value>`, lifecycle hooks (`pre-condition`, `initializer`, `stop-condition`, `finalizer`), `<r:rules>` child collection, `result-extractor`, and `error-handler`
 - `ValidationRuleBeanDefinitionParser` — parses `<r:validationRule>` elements for inline script-based validation rules
-- `PredefinedValidationRuleBeanDefinitionParser` — parses all 38 built-in validation rule elements (see below); shared parser instance registered for every predefined rule tag
+- `PredefinedValidationRuleBeanDefinitionParser` — parses all 37 built-in validation rule elements (see below); shared parser instance registered for every predefined rule tag
 
 #### Factory Beans
 - `RuleFactoryBean` — `FactoryBean<Rule>` that constructs a `Rule` from parsed XML attributes and script expressions
 - `RuleSetFactoryBean` — `FactoryBean<RuleSet>` that constructs a `RuleSet` from parsed XML attributes, typed parameters, lifecycle hooks, and a rule collection
 - `ValidationRuleFactoryBean` — `FactoryBean<Rule>` that constructs a script-based validation rule from XML
-- `PredefinedValidationRuleFactoryBean` — `FactoryBean<Rule>` that instantiates one of the 38 built-in `ValueValidationRule` classes from XML attributes (`binding`, `errorCode`, `severity`, `errorMessage`, and rule-specific parameters)
+- `PredefinedValidationRuleFactoryBean` — `FactoryBean<Rule>` that instantiates one of the 37 built-in `ValueValidationRule` classes from XML attributes (`binding`, `errorCode`, `severity`, `errorMessage`, and rule-specific parameters)
 - `RuleFromInstanceFactoryBean` — `FactoryBean<Rule>` that wraps an existing Spring bean (referenced by `<r:bean-ref name="..."/>`) or a class (referenced by `<r:class-ref class="..."/>`) as a `Rule`
 
 #### Supporting Types
@@ -45,7 +142,7 @@
 - `META-INF/spring.handlers` and `META-INF/spring.schemas` updated to register `RuliiNamespaceHandler` and point to the new schema location
 
 #### Predefined Validation Rules — XML Elements
-38 built-in validation rules are now available as first-class XML elements inside `<r:ruleset>` or standalone:
+37 built-in validation rules are now available as first-class XML elements inside `<r:ruleset>` or standalone:
 
 | Element | Description |
 |---|---|
@@ -107,7 +204,7 @@ All predefined elements share common attributes: `binding` (required), `errorCod
 - `RuleXmlTest` — XML-declared `<r:rule>` elements with conditions and actions
 - `RuleSetXmlTest` — XML-declared `<r:ruleset>` elements with parameters and lifecycle hooks
 - `ValidationRuleXmlTest` — inline script-based validation rules via XML
-- `PredefinedValidationRuleXmlTest` — all 38 predefined validation rule elements
+- `PredefinedValidationRuleXmlTest` — all 37 predefined validation rule elements
 - `RuleRefXmlTest` — `<r:bean-ref>` and `<r:class-ref>` rule references inside rulesets
 - `ScriptExpressionTest` — `ScriptExpression` parsing and resolution
 - `RuleScanXmlLocationsTest` — pure XML-based rule discovery via `xmlLocations`

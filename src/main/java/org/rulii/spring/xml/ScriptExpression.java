@@ -120,6 +120,33 @@ public class ScriptExpression {
     }
 
     /**
+     * Resolves an expression (condition, action, or function) declared either as an
+     * attribute on the parent element (terse form, e.g. {@code <rule given="#ctx.age >= 18">})
+     * or as a child element of the same name (e.g. {@code <given>...</given>}). Declaring
+     * both is reported as a parse error with the XML source location. The attribute form
+     * always uses the file's default scripting language — a per-expression
+     * {@code language} override requires the element form.
+     *
+     * @param parent        the element carrying the condition
+     * @param name          the attribute/child-element name (e.g. {@code given})
+     * @param parserContext the parser context used for error reporting
+     * @return the parsed expression, or {@code null} when neither form is declared
+     */
+    static ScriptExpression fromAttributeOrChild(Element parent, String name, ParserContext parserContext) {
+        String attribute = parent.getAttribute(name);
+        Element child = DomUtils.getChildElementByTagName(parent, name);
+
+        if (StringUtils.hasText(attribute) && child != null) {
+            parserContext.getReaderContext().error("<" + parent.getLocalName() + "> declares [" + name
+                    + "] both as an attribute and as a child element; use one or the other.", parent);
+        }
+
+        if (StringUtils.hasText(attribute)) return new ScriptExpression(null, attribute);
+
+        return child != null ? parse(child, parserContext) : null;
+    }
+
+    /**
      * Builds a {@link ScriptExpression} from an expression-bearing element, or returns
      * {@code null} when the element has neither an {@code expr} attribute nor a non-blank
      * direct text body. Only direct text/CDATA children count as the body — text inside

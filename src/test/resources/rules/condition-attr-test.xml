@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- Conditions as attributes: the terse form of the condition child elements. -->
+
+    <r:rule name="AttrGivenRule" description="given and pre-condition as attributes"
+            pre-condition="#ctx.age != null"
+            given="#ctx.age >= 18"/>
+
+    <r:validationRule name="AttrValidationRule" errorCode="attr.check"
+                      given="#ctx.value > 0"/>
+
+    <r:rule name="AttrEffectRule" given="true">
+        <r:then>#ctx.ran = true</r:then>
+    </r:rule>
+
+    <r:ruleset name="AttrRuleSet" description="pre/stop conditions as attributes"
+               pre-condition="#ctx.go == true"
+               stop-condition="#ctx.stop == true">
+        <r:rules>
+            <r:bean-ref name="AttrEffectRule"/>
+        </r:rules>
+    </r:ruleset>
+
+    <r:ruleflow name="AttrFlow" description="when/for-each conditions as attributes">
+        <r:when condition="#ctx.total >= 100">
+            <r:then>
+                <r:execute>#ctx.approved = true</r:execute>
+            </r:then>
+        </r:when>
+        <r:for-each item="n" source="{1, 2, 3}" stop-condition="#ctx.stopLoop == true">
+            <r:execute>#ctx.sum = #ctx.sum + #ctx.n</r:execute>
+        </r:for-each>
+    </r:ruleflow>
+
+    <!-- Action/function attributes: fully-hoisted one-liner rule, ruleset lifecycle,
+         and flow finalizer/returning. -->
+
+    <r:rule name="AttrActionRule"
+            given="#ctx.total >= 100"
+            then="#ctx.approved = true"
+            otherwise="#ctx.approved = false"/>
+
+    <r:ruleset name="AttrLifecycleRuleSet"
+               initializer="#ctx.trace = #ctx.trace + 'I'"
+               finalizer="#ctx.trace = #ctx.trace + 'F'">
+        <r:rules>
+            <r:bean-ref name="AttrEffectRule"/>
+        </r:rules>
+    </r:ruleset>
+
+    <r:ruleflow name="AttrReturningFlow"
+                finalizer="#ctx.flowDone = true"
+                returning="#ctx.doubledValue">
+        <r:apply as="doubledValue">#ctx.v * 2</r:apply>
+    </r:ruleflow>
+
+</beans>

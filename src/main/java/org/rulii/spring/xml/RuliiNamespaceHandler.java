@@ -74,6 +74,7 @@ public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
         registerBeanDefinitionParser("rule", new RuleBeanDefinitionParser());
         registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser());
         registerBeanDefinitionParser("ruleset", new RuleSetBeanDefinitionParser());
+        registerBeanDefinitionParser("ruleflow", new RuleFlowBeanDefinitionParser());
 
         // One shared parser handles every predefined validator element; the element list
         // lives next to the dispatch switch it must stay in sync with.

@@ -20,6 +20,7 @@ package org.rulii.spring.xml;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
@@ -75,26 +76,37 @@ class RuleBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
         builder.addPropertyValue("description", element.getAttribute("description"));
         builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
 
-        Element preCond = DomUtils.getChildElementByTagName(element, "pre-condition");
-        if (preCond != null) {
-            builder.addPropertyValue("preCondition", ScriptExpression.parse(preCond, parserContext));
+        ScriptExpression preCondition = ScriptExpression.fromAttributeOrChild(element, "pre-condition", parserContext);
+        if (preCondition != null) {
+            builder.addPropertyValue("preCondition", preCondition);
         }
 
-        Element given = DomUtils.getChildElementByTagName(element, "given");
+        ScriptExpression given = ScriptExpression.fromAttributeOrChild(element, "given", parserContext);
         if (given != null) {
-            builder.addPropertyValue("condition", ScriptExpression.parse(given, parserContext));
+            builder.addPropertyValue("condition", given);
         }
 
+        String thenAttribute = element.getAttribute("then");
         List<Element> actions = DomUtils.getChildElementsByTagName(element, "then");
-        if (!actions.isEmpty()) {
+
+        if (StringUtils.hasText(thenAttribute) && !actions.isEmpty()) {
+            parserContext.getReaderContext().error("<" + element.getLocalName()
+                    + "> declares [then] both as an attribute and as child element(s); use one or the other.", element);
+        }
+
+        if (StringUtils.hasText(thenAttribute)) {
+            ManagedList<ScriptExpression> thenActions = new ManagedList<>();
+            thenActions.add(new ScriptExpression(null, thenAttribute));
+            builder.addPropertyValue("thenActions", thenActions);
+        } else if (!actions.isEmpty()) {
             ManagedList<ScriptExpression> thenActions = new ManagedList<>();
             actions.forEach(e -> thenActions.add(ScriptExpression.parse(e, parserContext)));
             builder.addPropertyValue("thenActions", thenActions);
         }
 
-        Element otherwise = DomUtils.getChildElementByTagName(element, "otherwise");
+        ScriptExpression otherwise = ScriptExpression.fromAttributeOrChild(element, "otherwise", parserContext);
         if (otherwise != null) {
-            builder.addPropertyValue("otherwiseAction", ScriptExpression.parse(otherwise, parserContext));
+            builder.addPropertyValue("otherwiseAction", otherwise);
         }
     }
 }

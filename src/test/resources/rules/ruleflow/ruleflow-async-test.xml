@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- Sub-flow launched asynchronously by AsyncFlow. -->
+    <r:ruleflow name="SquareFlow" description="Squares the bound value">
+        <r:param name="v" type="java.lang.Integer"/>
+        <r:apply as="sq">#ctx.v * #ctx.v</r:apply>
+        <r:returning>#ctx.sq</r:returning>
+    </r:ruleflow>
+
+    <r:ruleflow name="AsyncFlow" description="Async execution, continuation, and awaits">
+        <r:param name="v" type="java.lang.Integer"/>
+
+        <r:async-run bean-ref="SquareFlow" as="f1"/>
+        <r:await name="f1" timeout="10" unit="seconds"/>
+
+        <r:async-run bean-ref="SquareFlow" as="f2" context-mode="shared">
+            <r:then-run result="squared">
+                <r:execute>#ctx.continued = #ctx.squared</r:execute>
+            </r:then-run>
+        </r:async-run>
+        <r:await-all names="f1, f2" timeout="10" unit="seconds"/>
+
+        <r:apply as="total">#ctx.f1.get() + #ctx.f2.get()</r:apply>
+        <r:returning>#ctx.total</r:returning>
+    </r:ruleflow>
+
+</beans>

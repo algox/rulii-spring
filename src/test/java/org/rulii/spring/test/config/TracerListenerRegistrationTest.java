@@ -55,6 +55,8 @@ public class TracerListenerRegistrationTest {
     private CountingRuleListener ruleListener;
     @Autowired
     private CountingDualListener dualListener;
+    @Autowired
+    private CountingRuleFlowListener ruleFlowListener;
 
     public TracerListenerRegistrationTest() {
         super();
@@ -84,6 +86,21 @@ public class TracerListenerRegistrationTest {
         // must not be double-registered through the narrower RuleListener collection.
         Assertions.assertEquals(ruliiStartsBefore + 1, ruliiListener.getRuleStartCount());
         Assertions.assertEquals(ruleStartsBefore + 1, ruleListener.getRuleStartCount());
+    }
+
+    @Test
+    public void testRuleFlowListenerBeanReceivesFlowEvents() {
+        int startsBefore = ruleFlowListener.getFlowStartCount();
+
+        org.rulii.ruleflow.RuleFlow<?> flow = org.rulii.ruleflow.RuleFlow.builder()
+                .name("tracerProbeFlow")
+                .bind("probe", 1)
+                .build();
+
+        flow.run(RuleContext.builder().with(ruleContextOptions).build());
+
+        Assertions.assertEquals(startsBefore + 1, ruleFlowListener.getFlowStartCount(),
+                "RuleFlowListener beans must be registered on the auto-configured Tracer");
     }
 
     @Test
@@ -124,6 +141,11 @@ public class TracerListenerRegistrationTest {
         public CountingDualListener countingDualListener() {
             return new CountingDualListener();
         }
+
+        @Bean
+        public CountingRuleFlowListener countingRuleFlowListener() {
+            return new CountingRuleFlowListener();
+        }
     }
 
     static class CountingRuliiListener implements RuliiListener {
@@ -159,6 +181,24 @@ public class TracerListenerRegistrationTest {
 
         public int getRuleStartCount() {
             return ruleStartCount.get();
+        }
+    }
+
+    static class CountingRuleFlowListener implements org.rulii.ruleflow.RuleFlowListener {
+
+        private final AtomicInteger flowStartCount = new AtomicInteger();
+
+        public CountingRuleFlowListener() {
+            super();
+        }
+
+        @Override
+        public void onRuleFlowStart(org.rulii.ruleflow.RuleFlow<?> ruleFlow, org.rulii.bind.NamedScope ruleFlowScope) {
+            flowStartCount.incrementAndGet();
+        }
+
+        public int getFlowStartCount() {
+            return flowStartCount.get();
         }
     }
 

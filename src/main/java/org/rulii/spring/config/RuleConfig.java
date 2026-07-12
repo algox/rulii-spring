@@ -34,6 +34,7 @@ import org.rulii.spring.text.SpringEnvironmentMessageResolver;
 import org.rulii.text.MessageFormatter;
 import org.rulii.text.MessageResolver;
 import org.rulii.rule.RuleListener;
+import org.rulii.ruleflow.RuleFlowListener;
 import org.rulii.ruleset.RuleSetListener;
 import org.rulii.trace.RuliiListener;
 import org.rulii.trace.Tracer;
@@ -253,20 +254,23 @@ public class RuleConfig {
     /**
      * Creates a Tracer instance if no other bean of type Tracer is available.
      * Any listener beans found in the application context are automatically registered:
-     * {@link RuliiListener} beans receive all event categories; {@link RuleListener} and
-     * {@link RuleSetListener} beans receive their respective category only. Each listener
-     * bean is registered exactly once, even when it implements multiple listener interfaces.
+     * {@link RuliiListener} beans receive all event categories; {@link RuleListener},
+     * {@link RuleSetListener}, and {@link RuleFlowListener} beans receive their respective
+     * category only. Each listener bean is registered exactly once, even when it implements
+     * multiple listener interfaces.
      *
      * @param ruliiListeners listener beans to register for all event categories
      * @param ruleListeners listener beans to register for rule events
      * @param ruleSetListeners listener beans to register for ruleset events
+     * @param ruleFlowListeners listener beans to register for rule-flow events
      * @return a new Tracer instance with all listener beans registered
      */
     @Bean(BeanNames.TRACER)
     @ConditionalOnMissingBean(Tracer.class)
     public Tracer tracer(ObjectProvider<RuliiListener> ruliiListeners,
                          ObjectProvider<RuleListener> ruleListeners,
-                         ObjectProvider<RuleSetListener> ruleSetListeners) {
+                         ObjectProvider<RuleSetListener> ruleSetListeners,
+                         ObjectProvider<RuleFlowListener> ruleFlowListeners) {
         Tracer result = Tracer.builder().build();
         // Identity-based: a bean implementing several listener interfaces appears in several
         // provider streams and must be registered exactly once (RuliiListener wins, being first).
@@ -287,6 +291,12 @@ public class RuleConfig {
         ruleSetListeners.orderedStream().forEach(listener -> {
             if (!registered.add(listener)) return;
             LOGGER.info("Registering RuleSetListener [" + listener.getClass() + "]");
+            result.addListener(listener);
+        });
+
+        ruleFlowListeners.orderedStream().forEach(listener -> {
+            if (!registered.add(listener)) return;
+            LOGGER.info("Registering RuleFlowListener [" + listener.getClass() + "]");
             result.addListener(listener);
         });
 

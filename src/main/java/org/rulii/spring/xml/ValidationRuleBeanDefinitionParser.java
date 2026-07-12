@@ -84,8 +84,8 @@ class ValidationRuleBeanDefinitionParser extends AbstractRuliiBeanDefinitionPars
         if (StringUtils.hasText(errorMessage)) builder.addPropertyValue("errorMessage",   errorMessage);
         if (StringUtils.hasText(defaultMessage)) builder.addPropertyValue("defaultMessage", defaultMessage);
 
-        Element given = DomUtils.getChildElementByTagName(element, "given");
+        ScriptExpression given = ScriptExpression.fromAttributeOrChild(element, "given", parserContext);
 
-        if (given != null) builder.addPropertyValue("condition", ScriptExpression.parse(given, parserContext));
+        if (given != null) builder.addPropertyValue("condition", given);
     }
 }

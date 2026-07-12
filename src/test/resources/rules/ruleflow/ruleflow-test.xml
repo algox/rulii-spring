@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- Rules the flow references: by registry name (execution-time) and bean-ref (wiring-time). -->
+    <r:rule name="FlowLogRule" description="Run via RuleRegistry lookup at execution time">
+        <r:given>true</r:given>
+        <r:then>#ctx.ranViaRegistry = true</r:then>
+    </r:rule>
+
+    <r:rule name="FlowDiscountRule" description="Run via Spring bean-ref at wiring time">
+        <r:given>true</r:given>
+        <r:then>#ctx.discountApplied = true</r:then>
+    </r:rule>
+
+    <r:ruleflow name="OrderFlow" description="Synchronous feature coverage">
+        <r:param name="total" type="java.lang.Integer"/>
+        <r:param name="sum" type="java.lang.Integer"/>
+
+        <r:bind name="log" value="start"/>                <!-- literal bind -->
+        <r:bind name="doubled">#ctx.total * 2</r:bind>    <!-- script bind (apply.as lowering) -->
+
+        <r:when>
+            <!-- ${order.flowMin:100}: placeholder default, resolved at startup -->
+            <r:condition>#ctx.total >= ${order.flowMin:100}</r:condition>
+            <r:then>
+                <r:bind name="status" value="approved"/>
+                <r:run name="FlowLogRule"/>
+                <r:run bean-ref="FlowDiscountRule"/>
+                <r:apply as="tally">#ctx.doubled + 1</r:apply>
+            </r:then>
+            <r:otherwise>
+                <r:bind name="status" value="rejected"/>
+                <r:exit/>
+            </r:otherwise>
+        </r:when>
+
+        <r:for-each item="n">
+            <r:source>{1, 2, 3}</r:source>
+            <r:execute>#ctx.sum = #ctx.sum + #ctx.n</r:execute>
+        </r:for-each>
+
+        <!-- Step-level handler: the script fails, the handler recovers. The handler
+             writes through to a pre-existing binding so the recovery is observable
+             outside the flow scope. -->
+        <r:execute>
+            #ctx.noSuchBinding.explode()
+            <r:on-exception exception="org.rulii.model.UnrulyException">
+                <r:execute>#ctx.recovered = true</r:execute>
+            </r:on-exception>
+        </r:execute>
+
+        <!-- Step-scoped literal params -->
+        <r:apply as="withCheck">
+            #ctx.label
+            <r:with name="label" value="premium"/>
+        </r:apply>
+
+        <r:scope name="tmp">
+            <r:bind name="scratch">5</r:bind>
+        </r:scope>
+
+        <!-- Flow-internal bindings (flow scope is removed after execution) are exported
+             into a pre-existing binding for the tests to observe. -->
+        <r:execute>#ctx.snapshot = #ctx.log + '|' + #ctx.doubled + '|' + #ctx.tally + '|' + #ctx.withCheck</r:execute>
+
+        <r:on-exception exception="java.lang.Exception">
+            <r:execute>#ctx.globallyHandled = true</r:execute>
+        </r:on-exception>
+
+        <r:finalizer>#ctx.finalized = true</r:finalizer>
+        <r:returning>#ctx.status</r:returning>
+    </r:ruleflow>
+
+</beans>

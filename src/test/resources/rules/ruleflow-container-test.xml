@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <r:ruleflow name="ContainerFlow" description="Custom container and leaf commands">
+        <!-- Leaf custom command: no body. -->
+        <r:command ref="markerCommand"/>
+
+        <!-- Container custom command: the RepeatCommand bean executes its body N times. -->
+        <r:command ref="repeatCommand">
+            <r:execute>#ctx.count = #ctx.count + 1</r:execute>
+            <r:when condition="#ctx.count == 2">
+                <r:then>
+                    <r:execute>#ctx.sawTwo = true</r:execute>
+                </r:then>
+            </r:when>
+        </r:command>
+    </r:ruleflow>
+
+</beans>
