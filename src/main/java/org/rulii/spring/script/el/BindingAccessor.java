@@ -17,6 +17,7 @@
  */
 package org.rulii.spring.script.el;
 
+import org.jspecify.annotations.Nullable;
 import org.rulii.bind.Binding;
 import org.rulii.bind.Bindings;
 import org.springframework.core.ResolvableType;
@@ -25,7 +26,6 @@ import org.springframework.expression.AccessException;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.PropertyAccessor;
 import org.springframework.expression.TypedValue;
-import org.springframework.lang.Nullable;
 
 /**
  * A Spring SpEL {@link PropertyAccessor} that resolves property names against a {@link Bindings} target.
