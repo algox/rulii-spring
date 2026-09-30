@@ -20,6 +20,7 @@ package org.rulii.spring.test.annotation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.rulii.context.RuleContext;
+import org.rulii.model.SourceDefinition;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
@@ -177,7 +178,7 @@ class RuleScanXmlLocationsTest {
     @Test
     void metaInfoListsTheXmlFilesLoaded() {
         assertEquals(1, metaInfo.xmlFiles().size(), metaInfo.xmlFiles().toString());
-        assertTrue(metaInfo.xmlFiles().get(0).contains("xml-scan-rules.xml"), metaInfo.xmlFiles().get(0));
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", metaInfo.xmlFiles().get(0), "folder scans are labelled folder + file name");
     }
 
     // ------------------------------------------------------------------
@@ -190,6 +191,7 @@ class RuleScanXmlLocationsTest {
 
         XmlSource ageRule = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlDeclaredAgeRule").getSource());
         assertTrue(ageRule.resource().getDescription().contains("xml-scan-rules.xml"), ageRule.describe());
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", ageRule.location());
         assertEquals(12, ageRule.line(), ageRule.describe());
 
         XmlSource ruleSet = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlDeclaredRuleSet").getSource());
@@ -199,6 +201,21 @@ class RuleScanXmlLocationsTest {
         XmlSource inline = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlInlineAdultCheck").getSource());
         assertEquals(23, inline.line(), inline.describe());
         assertTrue(factory.getBeanDefinition("XmlInlineAdultCheck").getResourceDescription().contains("xml-scan-rules.xml"));
+    }
+
+    @Test
+    void artifactsReportTheXmlFileAndLineAsTheirSource() {
+        SourceDefinition rule = ruleRegistry.getRule("XmlDeclaredAgeRule").getDefinition().getSource();
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", rule.getFileName());
+        assertEquals(12, rule.getLineNumber());
+        assertNull(rule.getClassName());
+
+        SourceDefinition ruleSet = ruleRegistry.getRuleSet("XmlDeclaredRuleSet").getDefinition().getSource();
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", ruleSet.getFileName());
+        assertEquals(21, ruleSet.getLineNumber());
+
+        SourceDefinition inline = ruleRegistry.getRule("XmlInlineAdultCheck").getDefinition().getSource();
+        assertEquals(23, inline.getLineNumber());
     }
 
     @Test

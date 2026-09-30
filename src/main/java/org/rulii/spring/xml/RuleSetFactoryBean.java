@@ -18,8 +18,13 @@
 package org.rulii.spring.xml;
 
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.ruleset.RuleSetBuilder;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -41,7 +46,7 @@ import java.util.List;
  * @author Max Arulananthan
  * @since 1.0
  */
-public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, InitializingBean {
+public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     private String name;
     private String description;
@@ -58,6 +63,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     private ScriptExpression errorHandler;
 
     private RuleSet<?> ruleSet;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     public RuleSetFactoryBean() {
         super();
@@ -97,6 +104,9 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
         if (errorHandler != null) builder.errorHandler(errorHandler.toFunction(defaultLanguage));
 
+        // The bean definition knows the XML file and line; the artifact reports them as its source.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) builder.source(source);
         ruleSet = builder.build();
     }
 
@@ -215,5 +225,14 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
         public String getDescription() {
             return description;
         }
+    }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 }

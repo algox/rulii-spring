@@ -272,7 +272,6 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
         reader.setEnvironment(getEnvironment());
         reader.setResourceLoader(getResourceLoader());
         reader.setDocumentLoader(new LineTrackingDocumentLoader());
-        reader.setSourceExtractor(new XmlSourceExtractor());
         ResourcePatternResolver resolver = ResourcePatternUtils.getResourcePatternResolver(getResourceLoader());
 
         for (String location : xmlLocations) {
@@ -292,9 +291,13 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
                 }
 
                 for (Resource resource : resources) {
-                    LOGGER.info("Loading XML rule context [" + resource.getDescription() + "]");
+                    String label = labelFor(location, resource);
+                    LOGGER.info("Loading XML rule context [" + label + "]");
+                    // Folder scans resolve to absolute file or jar URLs; the label keeps the
+                    // location as the application wrote it, so sources are stable across machines.
+                    reader.setSourceExtractor(new XmlSourceExtractor(r -> label));
                     reader.loadBeanDefinitions(resource);
-                    loaded.add(resource.getDescription());
+                    loaded.add(label);
                 }
             } catch (IOException e) {
                 throw new UnrulyException("Failed to resolve XML rule context resources at location [" + location + "]", e);
@@ -302,6 +305,21 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
         }
 
         return loaded;
+    }
+
+    /**
+     * The label a loaded file is known by in {@link XmlSource#location()} and
+     * {@link RuleRegistrarMetaInfo#xmlFiles()}: the location itself for an explicit file, the
+     * folder plus file name for a folder scan, and the resource's default label for a pattern.
+     *
+     * @param location the location as declared on {@code @RuleScan}
+     * @param resource one file it resolved to
+     * @return a stable, readable label
+     */
+    private String labelFor(String location, Resource resource) {
+        if (location.contains("*")) return XmlSource.location(resource);
+        if (location.endsWith(".xml")) return location;
+        return (location.endsWith("/") ? location : location + "/") + resource.getFilename();
     }
 
     /**

@@ -18,6 +18,11 @@
 package org.rulii.spring.test.xml;
 
 import org.junit.jupiter.api.Test;
+import org.rulii.model.SourceDefinition;
+import org.rulii.rule.Rule;
+import org.rulii.ruleflow.RuleFlow;
+import org.rulii.ruleset.RuleSet;
+import org.rulii.spring.test.rules.reftest.RangeCheckRule;
 import org.rulii.spring.xml.LineTrackingDocumentLoader;
 import org.rulii.spring.xml.XmlSource;
 import org.rulii.spring.xml.XmlSourceExtractor;
@@ -102,13 +107,54 @@ class XmlSourceTest {
     @Test
     void describeReadsAsFileAndLine() {
         XmlSource source = sourceOf(loadWithLineTracking(), "SourceRule");
-        assertTrue(source.describe().endsWith("xml-source-test.xml]:14"), source.describe());
+        assertEquals("classpath:rules/xml-source-test.xml", source.location(), "a ClassPathResource is labelled by its path");
+        assertEquals("classpath:rules/xml-source-test.xml:14", source.describe());
         assertEquals(source.describe(), new XmlSource(source.resource(), 14).describe());
-        assertFalse(new XmlSource(source.resource(), null).describe().contains(":"), "no line, no suffix");
+        assertEquals("classpath:rules/xml-source-test.xml", new XmlSource(source.resource(), null).describe(), "no line, no suffix");
+        assertEquals("rules/order.xml:3", new XmlSource(null, "rules/order.xml", 3).describe(), "an explicit label wins");
+    }
+
+    @Test
+    void artifactsReportTheXmlFileAndLineAsTheirSource() {
+        DefaultListableBeanFactory factory = loadWithLineTracking();
+
+        assertSource(factory.getBean("SourceRule", Rule.class).getDefinition().getSource(), 14);
+        assertSource(factory.getBean("MultiLineRule", Rule.class).getDefinition().getSource(), 17);
+        assertSource(factory.getBean("SourceValidationRule", Rule.class).getDefinition().getSource(), 23);
+        assertSource(factory.getBean("SourceNotNullRule", Rule.class).getDefinition().getSource(), 25);
+        assertSource(factory.getBean("SourceRuleSet", RuleSet.class).getDefinition().getSource(), 27);
+        assertSource(factory.getBean("SourceFlow", RuleFlow.class).getDefinition().getSource(), 39);
+
+        // Inline members, including the <class-ref> rule whose rule class is a Java class
+        RuleSet<?> ruleSet = factory.getBean("SourceRuleSet", RuleSet.class);
+        assertSource(ruleSet.getRule("SourceInlineRule").getDefinition().getSource(), 29);
+        assertSource(ruleSet.getRule("SourceInlineValidationRule").getDefinition().getSource(), 30);
+        assertSource(ruleSet.getRule("SourceInlineNotBlankRule").getDefinition().getSource(), 31);
+        Rule classRef = ruleSet.getRules().stream().filter(r -> r.getTarget() instanceof RangeCheckRule).findFirst().orElseThrow();
+        assertSource(classRef.getDefinition().getSource(), 32);
+        assertEquals(RangeCheckRule.class, classRef.getDefinition().getRuleClass(), "the rule class is still on the definition");
+    }
+
+    private static void assertSource(SourceDefinition source, int line) {
+        assertNotNull(source);
+        assertNull(source.getClassName(), source.toString());
+        assertNull(source.getMethodName(), source.toString());
+        assertEquals("classpath:rules/xml-source-test.xml", source.getFileName());
+        assertEquals(line, source.getLineNumber());
     }
 
     @Test
     void plainReaderKeepsTheFileButNoLine() {
+        DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(factory).loadBeanDefinitions(FIXTURE);
+
+        SourceDefinition source = factory.getBean("SourceRule", Rule.class).getDefinition().getSource();
+        assertEquals("classpath:rules/xml-source-test.xml", source.getFileName(), "the defining resource is still known");
+        assertNull(source.getLineNumber(), "but not the line");
+    }
+
+    @Test
+    void plainReaderKeepsTheFileButNoLineOnTheBeanDefinition() {
         DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
         new XmlBeanDefinitionReader(factory).loadBeanDefinitions(FIXTURE);
 

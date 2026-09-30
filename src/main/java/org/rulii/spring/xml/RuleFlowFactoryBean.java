@@ -18,6 +18,7 @@
 package org.rulii.spring.xml;
 
 import org.rulii.bind.BindingDeclaration;
+import org.rulii.model.SourceDefinition;
 import org.rulii.model.UnrulyException;
 import org.rulii.model.function.Function;
 import org.rulii.rule.Rule;
@@ -44,6 +45,7 @@ import org.rulii.spring.xml.RuleFlowCommandDefinition.WithParam;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -74,7 +76,7 @@ import java.util.function.Consumer;
  * @author Max Arulananthan
  * @since 2.0
  */
-public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, InitializingBean, BeanFactoryAware {
+public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, InitializingBean, BeanFactoryAware, BeanNameAware {
 
     private String name;
     private String description;
@@ -89,6 +91,7 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
     private ScriptExpression returningExpression;
 
     private BeanFactory beanFactory;
+    private String beanName;
     private RuleFlow<?> ruleFlow;
 
     // Guards against reusing one ContainerCommand instance for several <command> bodies:
@@ -103,6 +106,11 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
     @Override
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
         this.beanFactory = beanFactory;
+    }
+
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
     }
 
     @Override
@@ -146,6 +154,10 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
                     builder.returning();
                 }
             }
+
+            // The bean definition knows the XML file and line; the flow reports them as its source.
+            SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+            if (source != null) builder.source(source);
 
             ruleFlow = builder.build();
         } catch (UnrulyException e) {

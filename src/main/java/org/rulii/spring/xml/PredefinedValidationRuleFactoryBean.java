@@ -20,10 +20,15 @@ package org.rulii.spring.xml;
 import org.rulii.model.UnrulyException;
 import org.rulii.model.function.Function;
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
 import org.rulii.validation.Severity;
 import org.rulii.validation.ValueValidationRuleBuilder;
 import org.rulii.validation.rules.Validators;
 import org.rulii.validation.rules.pattern.PatternValidationRuleBuilder;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
@@ -46,7 +51,7 @@ import java.util.Locale;
  * @author Max Arulananthan
  * @since 1.0
  */
-public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
+public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     /**
      * All predefined validator element names, in registration order. This is the single
@@ -104,6 +109,8 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
     private List<String> items;
 
     private Rule rule;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     public PredefinedValidationRuleFactoryBean() {
         super();
@@ -123,6 +130,9 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
         if (StringUtils.hasText(severity)) vb.severity(Severity.valueOf(severity.toUpperCase(Locale.ROOT)));
         if (StringUtils.hasText(errorMessage)) vb.message(errorMessage);
 
+        // The bean definition knows the XML file and line; the artifact reports them as its source.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) vb.source(source);
         rule = vb.build();
     }
 
@@ -254,5 +264,14 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
 
     public void setItems(List<String> items) {
         this.items = items;
+    }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 }
