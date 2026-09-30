@@ -17,7 +17,6 @@
  */
 package org.rulii.spring.xml;
 
-import org.rulii.bind.Bindings;
 import org.rulii.bind.BindingDeclaration;
 import org.rulii.model.UnrulyException;
 import org.rulii.model.function.Function;
@@ -116,7 +115,8 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
             if (StringUtils.hasText(description)) builder.description(description);
 
             if (contextRef != null) {
-                builder.context(beanFactory.getBean(contextRef, Consumer.class));
+                // The bean name is the label the flow's definition reports for its context.
+                builder.context(beanFactory.getBean(contextRef, Consumer.class), contextRef);
             }
 
             for (RuleSetFactoryBean.InputParameterDefinition param : params) {
@@ -124,9 +124,9 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
                 if (param.getDefaultValueExpression() != null) {
                     builder.param(param.getName(), type,
-                            (Function) param.getDefaultValueExpression().toFunction(defaultLanguage));
+                            (Function) param.getDefaultValueExpression().toFunction(defaultLanguage), param.getDescription());
                 } else {
-                    builder.param(param.getName(), type, param.isRequired());
+                    builder.param(param.getName(), type, param.isRequired(), param.getDescription());
                 }
             }
 
@@ -215,15 +215,9 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
         }
 
         if (bind.beanRef() != null) {
-            Object bean = beanFactory.getBean(bind.beanRef());
-
-            if (bean instanceof Bindings bindings) {
-                if (bind.scope() != null) builder.bindTo(bind.scope(), bindings);
-                else builder.bind(bindings);
-            } else {
-                if (bind.scope() != null) builder.bindTo(bind.scope(), bean);
-                else builder.bind(bean);
-            }
+            // Same semantics as bind(Bindings) / bind(Object); the bean name becomes the label
+            // the flow's definition reports for the step.
+            builder.bindBean(bind.scope(), bind.beanRef(), beanFactory.getBean(bind.beanRef()));
             return;
         }
 

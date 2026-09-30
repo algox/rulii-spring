@@ -22,7 +22,7 @@
     </r:rule>
 
     <r:ruleflow name="OrderFlow" description="Synchronous feature coverage">
-        <r:param name="total" type="java.lang.Integer"/>
+        <r:param name="total" type="java.lang.Integer" description="Order total"/>
         <r:param name="sum" type="java.lang.Integer"/>
 
         <r:bind name="log" value="start"/>                <!-- literal bind -->
@@ -78,6 +78,26 @@
 
         <r:finalizer>#ctx.finalized = true</r:finalizer>
         <r:returning>#ctx.status</r:returning>
+    </r:ruleflow>
+
+    <!-- Introspection fixture: the flow definition must name the context bean and the
+         bind ref bean, and keep the param description. -->
+    <bean id="flowContext" class="org.rulii.spring.test.xml.RuleFlowXmlTest$NoOpContextConfigurer"/>
+
+    <bean id="flowDefaults" class="java.util.HashMap">
+        <constructor-arg>
+            <map>
+                <entry key="rate" value="2"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <r:ruleflow name="IntrospectionFlow" description="Context ref and bind ref labels">
+        <r:context ref="flowContext"/>
+        <r:param name="seed" type="java.lang.Integer" description="Starting value"/>
+        <r:bind name="defaults" ref="flowDefaults"/>
+        <r:bind name="doubled">#ctx.seed * 2</r:bind>
+        <r:returning>#ctx.doubled</r:returning>
     </r:ruleflow>
 
 </beans>

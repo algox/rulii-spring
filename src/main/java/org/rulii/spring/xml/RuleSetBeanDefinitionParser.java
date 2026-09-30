@@ -224,6 +224,7 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
             }
         }
 
+        stampSource(instanceBuilder.getRawBeanDefinition(), el, parserContext);
         String instanceBeanName = parserContext.getReaderContext()
                 .generateBeanName(instanceBuilder.getBeanDefinition());
         parserContext.getRegistry().registerBeanDefinition(instanceBeanName, instanceBuilder.getBeanDefinition());
@@ -244,6 +245,7 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
      * across rulesets is done with {@code <bean-ref>}, never by name collision.
      */
     private RuntimeBeanReference registerAndRef(AbstractBeanDefinition def, String name, Element source, ParserContext parserContext) {
+        stampSource(def, source, parserContext);
         String beanName = resolveBeanName(name, def, parserContext);
 
         if (parserContext.getRegistry().containsBeanDefinition(beanName)) {
@@ -266,10 +268,13 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
         String type = el.getAttribute("type");
         boolean required = RuliiNamespaceHandler.parseBooleanAttribute(el.getAttribute("required"), true);
 
+        String description = el.getAttribute("description");
+
         ScriptExpression defaultValueExpr = null;
         Element defaultValue = DomUtils.getChildElementByTagName(el, "default-value");
         if (defaultValue != null) defaultValueExpr = ScriptExpression.parse(defaultValue, parserContext);
 
-        return new RuleSetFactoryBean.InputParameterDefinition(paramName, type, required, defaultValueExpr);
+        return new RuleSetFactoryBean.InputParameterDefinition(paramName, type, required, defaultValueExpr,
+                StringUtils.hasText(description) ? description : null);
     }
 }

@@ -39,7 +39,25 @@ abstract class AbstractRuliiBeanDefinitionParser extends AbstractSingleBeanDefin
 
     @Override
     protected String resolveId(Element element, AbstractBeanDefinition definition, ParserContext parserContext) {
+        // parseInternal() already set the source; the defining resource is only recorded by
+        // Spring's own <bean> parser, so record it here - the one hook that sees the finished
+        // definition before it is registered.
+        definition.setResource(parserContext.getReaderContext().getResource());
         return resolveBeanName(element.getAttribute("name"), definition, parserContext);
+    }
+
+    /**
+     * Records where an inline bean definition came from, as top-level ones get it: the
+     * defining resource, and the element's {@link XmlSource} when the reader's source
+     * extractor provides one (see {@link XmlSourceExtractor}).
+     *
+     * @param def           the definition being registered
+     * @param element       the element that declared it
+     * @param parserContext the parser context
+     */
+    static void stampSource(AbstractBeanDefinition def, Element element, ParserContext parserContext) {
+        def.setResource(parserContext.getReaderContext().getResource());
+        def.setSource(parserContext.extractSource(element));
     }
 
     /**

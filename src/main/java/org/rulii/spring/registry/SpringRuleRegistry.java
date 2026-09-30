@@ -30,8 +30,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -72,6 +75,18 @@ public class SpringRuleRegistry implements RuleRegistry {
     @Override
     public int getCount() {
         return beanNames(Runnable.class).length;
+    }
+
+    /**
+     * The bean names of every {@link Runnable} bean, including those in ancestor bean factories.
+     * A runnable's bean name is its registry key, which may differ from its own name.
+     *
+     * @return unmodifiable sorted snapshot; never null.
+     * @since 2.1
+     */
+    @Override
+    public Set<String> getNames() {
+        return Collections.unmodifiableSet(new TreeSet<>(Arrays.asList(beanNames(Runnable.class))));
     }
 
     @Override

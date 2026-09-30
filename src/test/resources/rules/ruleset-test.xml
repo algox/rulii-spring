@@ -40,7 +40,7 @@
     ====================================================== -->
 
     <r:ruleset name="ParameterizedRuleSet" description="Demonstrates input parameter declarations">
-        <r:param name="order" type="java.lang.String"/>
+        <r:param name="order" type="java.lang.String" description="The order to check"/>
         <r:param name="maxItems" type="java.lang.Integer" required="false"/>
         <r:rules>
             <r:rule name="OrderNotEmptyRule">

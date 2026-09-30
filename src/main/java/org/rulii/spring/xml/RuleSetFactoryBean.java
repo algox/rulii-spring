@@ -72,9 +72,10 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
             Class type = ClassUtils.forName(inputParameter.getType(), Thread.currentThread().getContextClassLoader());
 
             if (inputParameter.getDefaultValueExpression() != null) {
-                builder.param(inputParameter.getName(), type, inputParameter.getDefaultValueExpression().toFunction(defaultLanguage));
+                builder.param(inputParameter.getName(), type,
+                        inputParameter.getDefaultValueExpression().toFunction(defaultLanguage), inputParameter.getDescription());
             } else {
-                builder.param(inputParameter.getName(), type, inputParameter.isRequired());
+                builder.param(inputParameter.getName(), type, inputParameter.isRequired(), inputParameter.getDescription());
             }
         }
 
@@ -170,13 +171,28 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
         private final String type;
         private final boolean required;
         private final ScriptExpression defaultValueExpression;
+        private final String description;
 
         public InputParameterDefinition(String name, String type, boolean required, ScriptExpression defaultValueExpression) {
+            this(name, type, required, defaultValueExpression, null);
+        }
+
+        /**
+         * @param name                   binding name
+         * @param type                   fully qualified type name; resolved at bean initialisation
+         * @param required               whether the binding must exist
+         * @param defaultValueExpression supplies the value when absent; may be null
+         * @param description            what the parameter is for; may be null
+         * @since 2.1
+         */
+        public InputParameterDefinition(String name, String type, boolean required, ScriptExpression defaultValueExpression,
+                                        String description) {
             super();
             this.name = name;
             this.type = type;
             this.required = required;
             this.defaultValueExpression = defaultValueExpression;
+            this.description = description;
         }
 
         public String getName() {
@@ -193,6 +209,11 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
         public ScriptExpression getDefaultValueExpression() {
             return defaultValueExpression;
+        }
+
+        /** What the parameter is for, or null when the XML declares no description. */
+        public String getDescription() {
+            return description;
         }
     }
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0] (unreleased)
+
+### Introspection support for rulii-explorer
+
+Built against rulii `2.1.0`, whose rules, rule sets and rule flows now describe themselves. rulii-spring adds the Spring-side provenance.
+
+- **XML file and line on every bean definition.** Bean definitions registered from `@RuleScan(xmlLocations)` files carry an `XmlSource` (the `Resource` and the 1-based line of the element's start tag) as their `BeanDefinition.getSource()`, and the defining resource as their resource description. This covers top-level rules, validation rules, predefined validators, rule sets and rule flows, and the auto-named beans for inline rules and `<r:class-ref>`. The reader parses with a `LineTrackingDocumentLoader` (Spring's DOM parse plus a non-validating SAX pass that records lines) and an `XmlSourceExtractor`; both are public for readers you set up yourself. XML loaded another way (`@ImportResource`, `<import>`) keeps the file but has no line.
+- **`RuleRegistrarMetaInfo.xmlFiles()`** lists the XML files the declared locations resolved to and that were loaded, in load order (resource descriptions). The record has a new 4-component canonical constructor; the 3-argument one is kept.
+- **`SpringRuleRegistry.getNames()`** (required by rulii 2.1) returns the sorted bean names of every `Runnable` bean, including ancestor bean factories.
+- **`<r:param description="...">`** is kept: it reaches `InputParameter.description()` on rule sets and rule flows. `RuleSetFactoryBean.InputParameterDefinition` gains a 5-argument constructor and `getDescription()`.
+- **Flow definitions name what the XML names.** `<r:context ref="x">` is reported by `RuleFlowDefinition.getContextLabel()` as `x`; `<r:bind ref="x">` steps report `x` as the label of their `CommandInfo.Bind` (with the bound names and kind, as before). Script binds (`<r:bind name="n">expr</r:bind>`) are `CommandInfo.Apply` steps with `as = n` and the expression text.
+
 ## [2.0.0]
 
 ### rulii 2.0 Upgrade

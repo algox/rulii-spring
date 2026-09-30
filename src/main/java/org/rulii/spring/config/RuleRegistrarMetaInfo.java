@@ -27,21 +27,36 @@ import java.util.List;
  * after rule scanning completes. It can be injected into application components to inspect
  * which packages were scanned, which XML locations were loaded, and how many rules were found.</p>
  *
- * <p>The record is immutable: both lists are unmodifiable defensive copies, and equality
+ * <p>The record is immutable: the lists are unmodifiable defensive copies, and equality
  * is value-based.</p>
  *
  * @param rulePackages the packages that were scanned for {@code @Rule}-annotated classes
- * @param xmlLocations the classpath folders from which XML rule context files were loaded
+ * @param xmlLocations the locations declared on {@code @RuleScan(xmlLocations)}, as written
+ * @param xmlFiles     the XML files those locations resolved to and that were loaded, in load
+ *                     order, as resource descriptions (since 2.1)
  * @param ruleCount    the total number of rules successfully registered during scanning
  *
  * @author Max Arulananthan
  * @since 1.0
  *
  */
-public record RuleRegistrarMetaInfo(List<String> rulePackages, List<String> xmlLocations, int ruleCount) {
+public record RuleRegistrarMetaInfo(List<String> rulePackages, List<String> xmlLocations, List<String> xmlFiles,
+                                    int ruleCount) {
 
     public RuleRegistrarMetaInfo {
         rulePackages = List.copyOf(rulePackages);
         xmlLocations = List.copyOf(xmlLocations);
+        xmlFiles = List.copyOf(xmlFiles);
+    }
+
+    /**
+     * Creates meta info without resolved XML files (pre-2.1 shape).
+     *
+     * @param rulePackages the scanned packages
+     * @param xmlLocations the declared XML locations
+     * @param ruleCount    the number of rules registered
+     */
+    public RuleRegistrarMetaInfo(List<String> rulePackages, List<String> xmlLocations, int ruleCount) {
+        this(rulePackages, xmlLocations, List.of(), ruleCount);
     }
 }

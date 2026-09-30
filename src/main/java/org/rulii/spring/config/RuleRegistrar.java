@@ -22,6 +22,9 @@ import org.rulii.lib.spring.core.annotation.AnnotationUtils;
 import org.rulii.model.UnrulyException;
 import org.rulii.rule.ClassBasedRuleBuilder;
 import org.rulii.spring.annotation.RuleScan;
+import org.rulii.spring.xml.LineTrackingDocumentLoader;
+import org.rulii.spring.xml.XmlSource;
+import org.rulii.spring.xml.XmlSourceExtractor;
 import org.rulii.util.reflect.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -122,10 +126,10 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
         int count = registerRules(rulePackages, registry);
 
         // 2. XML-declared rules are loaded afterwards
-        loadXmlContexts(xmlLocations, registry);
+        List<String> xmlFiles = loadXmlContexts(xmlLocations, registry);
 
         // Register the Meta-Info
-        registerMetaInfo(rulePackages, xmlLocations, count, registry);
+        registerMetaInfo(rulePackages, xmlLocations, xmlFiles, count, registry);
         // Marker disables RuleConfig's auto-scan fallback
         registerScanMarker(registry);
     }
@@ -250,17 +254,25 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
      * rules. The rulii namespace handler is picked up automatically via
      * {@code META-INF/spring.handlers}.
      *
+     * <p>Every bean definition the rulii parsers register from these files carries an
+     * {@link XmlSource} (file and line) as its source: the reader parses with a
+     * {@link LineTrackingDocumentLoader} and an {@link XmlSourceExtractor}.
+     *
      * @param xmlLocations XML locations declared on {@code @RuleScan}
      * @param registry     the registry to load bean definitions into
+     * @return the descriptions of the XML files loaded, in load order
      */
-    private void loadXmlContexts(String[] xmlLocations, BeanDefinitionRegistry registry) {
-        if (xmlLocations.length == 0) return;
+    private List<String> loadXmlContexts(String[] xmlLocations, BeanDefinitionRegistry registry) {
+        List<String> loaded = new ArrayList<>();
+        if (xmlLocations.length == 0) return loaded;
 
         XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(registry);
         // The registry alone is not EnvironmentCapable; without these the reader falls back
         // to a fresh StandardEnvironment and silently skips <beans profile="..."> sections.
         reader.setEnvironment(getEnvironment());
         reader.setResourceLoader(getResourceLoader());
+        reader.setDocumentLoader(new LineTrackingDocumentLoader());
+        reader.setSourceExtractor(new XmlSourceExtractor());
         ResourcePatternResolver resolver = ResourcePatternUtils.getResourcePatternResolver(getResourceLoader());
 
         for (String location : xmlLocations) {
@@ -282,11 +294,14 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
                 for (Resource resource : resources) {
                     LOGGER.info("Loading XML rule context [" + resource.getDescription() + "]");
                     reader.loadBeanDefinitions(resource);
+                    loaded.add(resource.getDescription());
                 }
             } catch (IOException e) {
                 throw new UnrulyException("Failed to resolve XML rule context resources at location [" + location + "]", e);
             }
         }
+
+        return loaded;
     }
 
     /**
@@ -320,17 +335,20 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
      * under the fixed name {@link BeanNames#RULE_SCAN_META_INFO}.
      *
      * <p>When multiple {@code @RuleScan} configuration classes are present, the meta-info from each
-     * scan is merged (union of packages and XML locations, summed rule count) so the application
-     * always sees exactly one injectable {@link RuleRegistrarMetaInfo} bean.
+     * scan is merged (union of packages, XML locations and XML files, summed rule count) so the
+     * application always sees exactly one injectable {@link RuleRegistrarMetaInfo} bean.
      *
      * @param rulePackages an array of strings representing the packages to scan for rule classes
      * @param xmlLocations an array of locations from which XML context files were loaded
+     * @param xmlFiles     the XML files those locations resolved to, as resource descriptions
      * @param ruleCount    the total number of rules successfully registered
      * @param registry     the BeanDefinitionRegistry where the meta information will be registered
      */
-    private void registerMetaInfo(String[] rulePackages, String[] xmlLocations, int ruleCount, BeanDefinitionRegistry registry) {
+    private void registerMetaInfo(String[] rulePackages, String[] xmlLocations, List<String> xmlFiles, int ruleCount,
+                                  BeanDefinitionRegistry registry) {
         List<String> packages = Arrays.asList(rulePackages);
         List<String> locations = Arrays.asList(xmlLocations);
+        List<String> files = xmlFiles;
 
         if (registry.containsBeanDefinition(BeanNames.RULE_SCAN_META_INFO)) {
             BeanDefinition existing = registry.getBeanDefinition(BeanNames.RULE_SCAN_META_INFO);
@@ -339,7 +357,8 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
                 // A previous @RuleScan already registered meta-info - merge into a single bean
                 packages = merge(getStringListArg(existing, 0), packages);
                 locations = merge(getStringListArg(existing, 1), locations);
-                ruleCount += getIntArg(existing, 2);
+                files = merge(getStringListArg(existing, 2), files);
+                ruleCount += getIntArg(existing, 3);
                 registry.removeBeanDefinition(BeanNames.RULE_SCAN_META_INFO);
             }
         }
@@ -347,6 +366,7 @@ public class RuleRegistrar implements ImportBeanDefinitionRegistrar, Environment
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(RuleRegistrarMetaInfo.class);
         builder.addConstructorArgValue(packages);
         builder.addConstructorArgValue(locations);
+        builder.addConstructorArgValue(files);
         builder.addConstructorArgValue(ruleCount);
         registry.registerBeanDefinition(BeanNames.RULE_SCAN_META_INFO, builder.getBeanDefinition());
     }
