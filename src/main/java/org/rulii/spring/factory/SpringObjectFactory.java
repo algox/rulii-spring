@@ -20,9 +20,8 @@ package org.rulii.spring.factory;
 import org.rulii.model.UnrulyException;
 import org.rulii.util.reflect.DefaultObjectFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.context.event.EventListener;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,13 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>When {@code isUseCache} is requested (as the base class does for stateless helper
  * types like binding-matching strategies, which are resolved per rule execution), created
- * instances are cached per class; the cache is cleared when the application context closes.
+ * instances are cached per class; the cache is cleared when the owning container destroys
+ * this bean ({@link DisposableBean}). A destroy callback, unlike a {@code ContextClosedEvent}
+ * listener, only ever comes from the container this factory belongs to - Spring republishes
+ * a child context's close event to its parent, which must not shut down a parent's factory.
  *
  * @author Max Arulananthan
  * @since 1.0
  *
  */
-public class SpringObjectFactory extends DefaultObjectFactory {
+public class SpringObjectFactory extends DefaultObjectFactory implements DisposableBean {
 
     // Underlying Spring Factory that does the real work.
     private AutowireCapableBeanFactory ctx;
@@ -81,12 +83,12 @@ public class SpringObjectFactory extends DefaultObjectFactory {
     }
 
     /**
-     * Handles the ContextClosedEvent by releasing the ApplicationContext and clearing the cache.
-     *
-     * @param ctxClosedEvent the ContextClosedEvent to be handled
+     * Releases the bean factory and clears the instance cache. Invoked by the owning container
+     * when it destroys this bean; further {@link #create} calls fail with an
+     * {@link UnrulyException}.
      */
-    @EventListener
-    public void onContextClosed(ContextClosedEvent ctxClosedEvent) {
+    @Override
+    public void destroy() {
         this.ctx = null;
         this.objectCache.clear();
     }

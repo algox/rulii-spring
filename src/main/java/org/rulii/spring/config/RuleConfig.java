@@ -65,9 +65,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration class for setting up rules in the system.
@@ -202,18 +199,6 @@ public class RuleConfig {
     }
 
     /**
-     * Exposes the process-wide {@link ScriptProcessorManager} singleton as a bean and registers
-     * any {@link ScriptProcessorFactory} beans found in the application context into it
-     * (in addition to factories discovered via {@code META-INF/services}).
-     *
-     * <p>Note: {@code ScriptProcessorManager} is a JVM-wide singleton — registrations are global,
-     * shared across (and outliving) application contexts. Overriding this bean can only replace
-     * the registration step, not substitute a different manager instance.
-     *
-     * @param factories the ScriptProcessorFactory beans to register
-     * @return the singleton ScriptProcessorManager instance
-     */
-    /**
      * Installs the {@code ${property:default}} script-text resolver on the process-wide
      * {@link ScriptProcessorManager}. Registered as a static {@code BeanFactoryPostProcessor}
      * bean so the resolver is active before ANY singleton instantiates — XML-declared rules
@@ -233,22 +218,41 @@ public class RuleConfig {
         return new ScriptTextResolverConfigurer();
     }
 
+    /**
+     * Registers the context's {@link ScriptProcessorFactory} beans with the process-wide
+     * {@link ScriptProcessorManager} (in addition to factories discovered via
+     * {@code META-INF/services}) for the lifetime of the context: they are unregistered again
+     * when the context closes, so a closed context is not kept reachable from the JVM-wide
+     * registry through its factories.
+     *
+     * @param factories the ScriptProcessorFactory beans to register
+     * @return the registration, which undoes itself on context close
+     * @see ScriptProcessorFactoryRegistration
+     */
+    @Bean
+    @ConditionalOnMissingBean(ScriptProcessorFactoryRegistration.class)
+    public ScriptProcessorFactoryRegistration scriptProcessorFactoryRegistration(ObjectProvider<ScriptProcessorFactory> factories) {
+        return new ScriptProcessorFactoryRegistration(factories);
+    }
+
+    /**
+     * Exposes the process-wide {@link ScriptProcessorManager} singleton as a bean. Creating it
+     * forces the {@link ScriptProcessorFactoryRegistration} first, so anything that injects the
+     * manager sees the context's factories registered.
+     *
+     * <p>Note: {@code ScriptProcessorManager} is a JVM-wide singleton — registrations are global,
+     * shared across application contexts. Overriding this bean cannot substitute a different
+     * manager instance; to change how factories are registered, override the
+     * {@link ScriptProcessorFactoryRegistration} bean instead.
+     *
+     * @param registration the context's factory registration, when present
+     * @return the singleton ScriptProcessorManager instance
+     */
     @Bean(BeanNames.SCRIPT_MANAGER)
     @ConditionalOnMissingBean(ScriptProcessorManager.class)
-    public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactory> factories) {
-        ScriptProcessorManager result = ScriptProcessorManager.getInstance();
-
-        factories.orderedStream().forEach(factory -> {
-            LOGGER.info("Registering custom ScriptProcessor [" + factory.getClass() + "] Language [" + factory.getLanguageName() + "]");
-            // Force the manager's lazy ServiceLoader discovery to run BEFORE this explicit
-            // registration. load() re-registers discovered defaults unconditionally, so
-            // registering first would let the first rule evaluation silently clobber this
-            // factory with the ServiceLoader default for the same language.
-            result.getScriptProcessorFactory(factory.getLanguageName());
-            result.register(factory);
-        });
-
-        return result;
+    public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactoryRegistration> registration) {
+        registration.getIfAvailable();
+        return ScriptProcessorManager.getInstance();
     }
 
     /**
@@ -315,16 +319,21 @@ public class RuleConfig {
      *
      * <p>The pool mirrors rulii core's hardened default: bounded work queue with a
      * caller-runs rejection policy for graceful degradation under load (never an
-     * unbounded queue).
+     * unbounded queue). Threads are named {@code rulii-exec-N}.
      *
+     * <p>On context close the pool stops accepting work, waits up to
+     * {@code rulii.executor.awaitTerminationSeconds} (default 10) for running and queued
+     * rules to finish, then interrupts whatever is left - a stuck rule cannot keep the
+     * context's threads (and class loader) alive after shutdown.
+     *
+     * @param awaitTerminationSeconds how long to wait for in-flight rules before interrupting them
      * @return a new bounded thread pool sized to the available processors (minimum 2)
      */
-    @Bean(name = BeanNames.EXECUTOR_SERVICE, destroyMethod = "shutdown")
+    @Bean(name = BeanNames.EXECUTOR_SERVICE)
     @ConditionalOnMissingBean(name = BeanNames.EXECUTOR_SERVICE)
-    public ExecutorService executorService() {
+    public ExecutorService executorService(@Value("${rulii.executor.awaitTerminationSeconds:10}") long awaitTerminationSeconds) {
         int threads = Math.max(2, Runtime.getRuntime().availableProcessors());
-        return new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(1000), new ThreadPoolExecutor.CallerRunsPolicy());
+        return new RuleExecutorService(threads, 1000, awaitTerminationSeconds);
     }
 
     /**

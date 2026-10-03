@@ -25,7 +25,6 @@ import org.rulii.ruleflow.RuleFlow;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.registry.SpringRuleRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.event.ContextClosedEvent;
 
 import java.util.List;
 
@@ -164,8 +163,8 @@ public class SpringRuleRegistryTest {
     }
 
     @Test
-    public void testHandleContextClosedEventNullsContext() {
-        registry.onContextClosed(mock(ContextClosedEvent.class));
+    public void testDestroyNullsContext() {
+        registry.destroy();
         assertThrows(UnrulyException.class, () -> registry.isNameInUse("anything"));
         assertThrows(UnrulyException.class, registry::getCount);
     }
