@@ -53,6 +53,9 @@ reading this guide.
 - Spring Expression Language (SpEL) as a rule scripting language
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
+- `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
+- XML-declared artifacts know their file and line, and the `${...}` text as written, for tools such as
+  [rulii-explorer](https://github.com/algox/rulii-explorer)
 
 ---
 
@@ -63,13 +66,13 @@ reading this guide.
 <dependency>
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>1.2.0</version>
+    <version>2.1.0</version>
 </dependency>
 ```
 
 **Gradle**
 ```groovy
-implementation 'org.rulii:rulii-spring:1.2.0'
+implementation 'org.rulii:rulii-spring:2.1.0'
 ```
 
 > rulii-spring transitively pulls in `org.rulii:rulii`. You do not need to declare it separately.
@@ -266,6 +269,9 @@ rules, validation rules, rulesets, and ruleflows — with SpEL expressions for t
     <!-- Default scripting language for every expression in this file -->
     <r:scripting defaultLanguage="el"/>
 
+    <!-- Default category and tags for every rule, ruleset and ruleflow in this file (rulii 2.1) -->
+    <r:defaults category="Applicants" tags="onboarding"/>
+
 </beans>
 ```
 
@@ -284,6 +290,22 @@ Simple rules collapse to a one-liner using the equivalent attribute forms:
 
 ```xml
 <r:rule name="ApproveRule" given="#ctx.total >= 100" then="#ctx.approved = true" otherwise="#ctx.approved = false"/>
+```
+
+### Categories and tags
+
+Every artifact element — `rule`, `validationRule`, the predefined validators, `ruleset`, `ruleflow` and inline
+rules — takes a `category` (one, hierarchical with `/`) and `tags` (comma-separated). They reach rulii 2.1's
+`Categorized.getCategory()` / `getTags()` on the definition and are descriptive only: rulii never reads them
+when it runs, but tools such as [rulii-explorer](https://github.com/algox/rulii-explorer) group and filter by
+them. A file-level `<r:defaults>` applies to the whole file: an element's `category` replaces the default, its
+`tags` are added to it.
+
+```xml
+<r:defaults category="Pricing" tags="pricing"/>
+
+<r:rule name="VipDiscountRule" tags="vip" given="#ctx.customer.tier == 'VIP'" then="#ctx.discount = 0.15"/>
+<r:ruleflow name="nightlyRepriceFlow" category="Pricing/Catalogue">…</r:ruleflow>
 ```
 
 ### Validation rules
