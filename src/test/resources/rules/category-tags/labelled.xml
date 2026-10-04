@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <!-- File-level defaults: every artifact in this file is Pricing and tagged xml, pricing. -->
+    <r:defaults category="Pricing" tags="xml, pricing"/>
+
+    <!-- Takes the file defaults as they are. -->
+    <r:rule name="DefaultLabelledRule" description="Uses the file defaults">
+        <r:given>#ctx.total > 1</r:given>
+    </r:rule>
+
+    <!-- Its own category replaces the default; its tags are added to the default's (duplicates once). -->
+    <r:rule name="OverriddenRule" category=" Fraud / Scoring " tags="fraud, pricing ,, ">
+        <r:given>#ctx.total > 1</r:given>
+    </r:rule>
+
+    <r:validationRule name="LabelledValidation" errorCode="E1" category="Checks">
+        <r:given>#ctx.total > 1</r:given>
+    </r:validationRule>
+
+    <r:notNull name="LabelledNotNull" binding="person" tags="required"/>
+
+    <r:ruleset name="LabelledSet" category="Pricing/Sets" tags="set">
+        <r:rules>
+            <!-- An inline rule reads the file defaults too, not its rule set's category. -->
+            <r:rule name="InlineLabelled">
+                <r:given>#ctx.total > 1</r:given>
+            </r:rule>
+        </r:rules>
+    </r:ruleset>
+
+    <r:ruleflow name="LabelledFlow" tags="flow">
+        <r:apply as="doubledTotal">#ctx.total * 2</r:apply>
+    </r:ruleflow>
+
+</beans>

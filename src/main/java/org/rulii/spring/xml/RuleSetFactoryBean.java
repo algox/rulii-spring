@@ -50,6 +50,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
     private boolean validating = false;
 
@@ -74,6 +76,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void afterPropertiesSet() throws Exception {
         RuleSetBuilder builder = RuleSet.builder().with(name, description);
+        builder.category(category);
+        builder.tags(tags);
 
         for (InputParameterDefinition inputParameter : params) {
             Class type = ClassUtils.forName(inputParameter.getType(), Thread.currentThread().getContextClassLoader());
@@ -126,6 +130,14 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {

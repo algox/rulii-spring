@@ -43,6 +43,8 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean, Bea
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
 
     private ScriptExpression preCondition;
@@ -61,6 +63,8 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean, Bea
     @Override
     public void afterPropertiesSet() {
         var builder = Rule.builder().name(name, description);
+        builder.category(category);
+        builder.tags(tags);
 
         if (preCondition != null) builder.preCondition(preCondition.toCondition(defaultLanguage));
 
@@ -94,6 +98,14 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean, Bea
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {

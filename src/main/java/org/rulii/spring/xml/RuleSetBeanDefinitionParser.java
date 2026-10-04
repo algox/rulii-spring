@@ -69,6 +69,8 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
 
         builder.addPropertyValue("name", element.getAttribute("name"));
         builder.addPropertyValue("description", element.getAttribute("description"));
+        builder.addPropertyValue("category", RuliiNamespaceHandler.getCategory(element));
+        builder.addPropertyValue("tags", RuliiNamespaceHandler.getTags(element));
         builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
         builder.addPropertyValue("validating",
                 RuliiNamespaceHandler.parseBooleanAttribute(element.getAttribute("validating"), false));

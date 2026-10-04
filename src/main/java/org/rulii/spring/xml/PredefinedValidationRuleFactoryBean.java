@@ -34,6 +34,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -82,6 +83,8 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
     private String type;
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
     private ValueSource valueSource;
 
@@ -125,6 +128,8 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
         ValueValidationRuleBuilder<?, ?> vb = buildRuleBuilder(fn);
 
         vb.name(name).description(description);
+        vb.category(category);
+        vb.tags(tags.toArray(new String[0]));
 
         if (StringUtils.hasText(errorCode)) vb.errorCode(errorCode);
         if (StringUtils.hasText(severity)) vb.severity(Severity.valueOf(severity.toUpperCase(Locale.ROOT)));
@@ -212,6 +217,14 @@ public class PredefinedValidationRuleFactoryBean implements FactoryBean<Rule>, I
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {

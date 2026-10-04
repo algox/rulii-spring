@@ -80,6 +80,8 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
 
     private String contextRef;
@@ -121,6 +123,8 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
             builder.name(name);
             usedContainers.clear();
             if (StringUtils.hasText(description)) builder.description(description);
+            builder.category(category);
+            builder.tags(tags);
 
             if (contextRef != null) {
                 // The bean name is the label the flow's definition reports for its context.
@@ -428,6 +432,14 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {
