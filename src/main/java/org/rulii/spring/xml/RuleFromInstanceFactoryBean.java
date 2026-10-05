@@ -19,6 +19,11 @@ package org.rulii.spring.xml;
 
 import org.rulii.model.UnrulyException;
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -34,10 +39,12 @@ import org.springframework.beans.factory.InitializingBean;
  * @author Max Arulananthan
  * @since 1.0
  */
-class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean {
+class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     private Object ruleInstance;
     private Rule rule;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     RuleFromInstanceFactoryBean() {
         super();
@@ -46,7 +53,11 @@ class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean
     @Override
     public void afterPropertiesSet() {
         if (ruleInstance == null) throw new UnrulyException("ruleInstance must not be null.");
-        rule = Rule.builder().build(ruleInstance);
+        var builder = Rule.builder().with(ruleInstance);
+        // Declared by <class-ref> in XML: that file and line are the source, not the rule class.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) builder.source(source);
+        rule = builder.build();
     }
 
     public void setRuleInstance(Object ruleInstance) {
@@ -58,4 +69,13 @@ class RuleFromInstanceFactoryBean implements FactoryBean<Rule>, InitializingBean
 
     @Override
     public Class<?> getObjectType() { return Rule.class; }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
 }

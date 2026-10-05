@@ -25,10 +25,8 @@ import org.rulii.spring.factory.SpringObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.ContextClosedEvent;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link SpringObjectFactory}.
@@ -98,8 +96,8 @@ public class SpringObjectFactoryTest {
     }
 
     @Test
-    public void testClosedContextThrowsUnrulyException() {
-        factory.onContextClosed(mock(ContextClosedEvent.class));
+    public void testDestroyedFactoryThrowsUnrulyException() {
+        factory.destroy();
         assertThrows(UnrulyException.class, () -> factory.create(SimpleHelper.class, false));
     }
 }

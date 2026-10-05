@@ -72,6 +72,8 @@ class ValidationRuleBeanDefinitionParser extends AbstractRuliiBeanDefinitionPars
 
         builder.addPropertyValue("name", element.getAttribute("name"));
         builder.addPropertyValue("description", element.getAttribute("description"));
+        builder.addPropertyValue("category", RuliiNamespaceHandler.getCategory(element));
+        builder.addPropertyValue("tags", RuliiNamespaceHandler.getTags(element));
         builder.addPropertyValue("defaultLanguage", RuliiNamespaceHandler.getDefaultLanguage(element));
 
         String errorCode = element.getAttribute("errorCode");

@@ -18,6 +18,11 @@
 package org.rulii.spring.xml;
 
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -34,10 +39,12 @@ import java.util.List;
  * @author Max Arulananthan
  * @since 1.0
  */
-public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
+public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
 
     private ScriptExpression preCondition;
@@ -46,6 +53,8 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
     private ScriptExpression otherwiseAction;
 
     private Rule rule;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     public RuleFactoryBean() {
         super();
@@ -54,6 +63,8 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
     @Override
     public void afterPropertiesSet() {
         var builder = Rule.builder().name(name, description);
+        builder.category(category);
+        builder.tags(tags);
 
         if (preCondition != null) builder.preCondition(preCondition.toCondition(defaultLanguage));
 
@@ -65,6 +76,9 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
 
         if (otherwiseAction != null) builder.otherwise(otherwiseAction.toAction(defaultLanguage));
 
+        // The bean definition knows the XML file and line; the artifact reports them as its source.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) builder.source(source);
         rule = builder.build();
     }
 
@@ -86,6 +100,14 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
         this.description = description;
     }
 
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
+    }
+
     public void setDefaultLanguage(String defaultLanguage) {
         this.defaultLanguage = defaultLanguage;
     }
@@ -104,5 +126,14 @@ public class RuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
 
     public void setOtherwiseAction(ScriptExpression otherwiseAction) {
         this.otherwiseAction = otherwiseAction;
+    }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 }

@@ -172,6 +172,14 @@ class RuleSetXmlTest {
     }
 
     @Test
+    void parameterizedRuleSetOrderParameterKeepsItsDescription() {
+        InputParameter<?> orderParam = findParam(parameterizedRuleSet, "order");
+        assertNotNull(orderParam);
+        assertEquals("The order to check", orderParam.description());
+        assertNull(findParam(parameterizedRuleSet, "maxItems").description(), "no description attribute means null");
+    }
+
+    @Test
     void parameterizedRuleSetMaxItemsParameterIsPresent() {
         InputParameter<?> maxItemsParam = findParam(parameterizedRuleSet, "maxItems");
         assertNotNull(maxItemsParam, "Expected 'maxItems' parameter");

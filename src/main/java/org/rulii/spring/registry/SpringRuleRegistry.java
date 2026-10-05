@@ -24,14 +24,16 @@ import org.rulii.rule.Rule;
 import org.rulii.ruleflow.RuleFlow;
 import org.rulii.ruleset.RuleSet;
 import org.springframework.beans.factory.BeanFactoryUtils;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,13 +43,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Lookups are hierarchy-consistent: enumeration ({@link #getRules()}, {@link #getRuleSets()},
  * {@link #getRuleFlows()}, {@link #getCount()}) includes ancestor bean factories, matching the
  * by-name lookups. Bean-name resolution per type is cached (bean definitions are frozen after
- * context refresh); the cache is released when the context closes.
+ * context refresh); the cache is released when the owning container destroys this bean
+ * ({@link DisposableBean}). A destroy callback, unlike a {@code ContextClosedEvent} listener,
+ * only ever comes from the container this registry belongs to - Spring republishes a child
+ * context's close event to its parent, which must not shut down a parent's registry.
  *
  * @author Max Arulananthan
  * @since 1.0
  *
  */
-public class SpringRuleRegistry implements RuleRegistry {
+public class SpringRuleRegistry implements RuleRegistry, DisposableBean {
 
     private volatile ListableBeanFactory ctx;
     private final Map<Class<?>, String[]> beanNameCache = new ConcurrentHashMap<>();
@@ -72,6 +77,18 @@ public class SpringRuleRegistry implements RuleRegistry {
     @Override
     public int getCount() {
         return beanNames(Runnable.class).length;
+    }
+
+    /**
+     * The bean names of every {@link Runnable} bean, including those in ancestor bean factories.
+     * A runnable's bean name is its registry key, which may differ from its own name.
+     *
+     * @return unmodifiable sorted snapshot; never null.
+     * @since 2.1
+     */
+    @Override
+    public Set<String> getNames() {
+        return Collections.unmodifiableSet(new TreeSet<>(Arrays.asList(beanNames(Runnable.class))));
     }
 
     @Override
@@ -144,12 +161,11 @@ public class SpringRuleRegistry implements RuleRegistry {
     }
 
     /**
-     * Handles the ContextClosedEvent by releasing the ApplicationContext and the name cache.
-     *
-     * @param ctxClosedEvent the ContextClosedEvent to be handled
+     * Releases the bean factory and the name cache. Invoked by the owning container when it
+     * destroys this bean; further lookups fail with an {@link UnrulyException}.
      */
-    @EventListener
-    public void onContextClosed(ContextClosedEvent ctxClosedEvent) {
+    @Override
+    public void destroy() {
         this.ctx = null;
         this.beanNameCache.clear();
     }

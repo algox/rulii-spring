@@ -18,8 +18,13 @@
 package org.rulii.spring.xml;
 
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.ruleset.RuleSetBuilder;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -41,10 +46,12 @@ import java.util.List;
  * @author Max Arulananthan
  * @since 1.0
  */
-public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, InitializingBean {
+public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
     private boolean validating = false;
 
@@ -58,6 +65,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     private ScriptExpression errorHandler;
 
     private RuleSet<?> ruleSet;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     public RuleSetFactoryBean() {
         super();
@@ -67,14 +76,17 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void afterPropertiesSet() throws Exception {
         RuleSetBuilder builder = RuleSet.builder().with(name, description);
+        builder.category(category);
+        builder.tags(tags);
 
         for (InputParameterDefinition inputParameter : params) {
             Class type = ClassUtils.forName(inputParameter.getType(), Thread.currentThread().getContextClassLoader());
 
             if (inputParameter.getDefaultValueExpression() != null) {
-                builder.param(inputParameter.getName(), type, inputParameter.getDefaultValueExpression().toFunction(defaultLanguage));
+                builder.param(inputParameter.getName(), type,
+                        inputParameter.getDefaultValueExpression().toFunction(defaultLanguage), inputParameter.getDescription());
             } else {
-                builder.param(inputParameter.getName(), type, inputParameter.isRequired());
+                builder.param(inputParameter.getName(), type, inputParameter.isRequired(), inputParameter.getDescription());
             }
         }
 
@@ -96,6 +108,9 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
         if (errorHandler != null) builder.errorHandler(errorHandler.toFunction(defaultLanguage));
 
+        // The bean definition knows the XML file and line; the artifact reports them as its source.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) builder.source(source);
         ruleSet = builder.build();
     }
 
@@ -115,6 +130,14 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {
@@ -170,13 +193,28 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
         private final String type;
         private final boolean required;
         private final ScriptExpression defaultValueExpression;
+        private final String description;
 
         public InputParameterDefinition(String name, String type, boolean required, ScriptExpression defaultValueExpression) {
+            this(name, type, required, defaultValueExpression, null);
+        }
+
+        /**
+         * @param name                   binding name
+         * @param type                   fully qualified type name; resolved at bean initialisation
+         * @param required               whether the binding must exist
+         * @param defaultValueExpression supplies the value when absent; may be null
+         * @param description            what the parameter is for; may be null
+         * @since 2.1
+         */
+        public InputParameterDefinition(String name, String type, boolean required, ScriptExpression defaultValueExpression,
+                                        String description) {
             super();
             this.name = name;
             this.type = type;
             this.required = required;
             this.defaultValueExpression = defaultValueExpression;
+            this.description = description;
         }
 
         public String getName() {
@@ -194,5 +232,19 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
         public ScriptExpression getDefaultValueExpression() {
             return defaultValueExpression;
         }
+
+        /** What the parameter is for, or null when the XML declares no description. */
+        public String getDescription() {
+            return description;
+        }
+    }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 }

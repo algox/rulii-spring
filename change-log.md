@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.1.0] (unreleased)
+
+### Introspection support for rulii-explorer
+
+Built against rulii `2.1.0`, whose rules, rule sets and rule flows now describe themselves. rulii-spring adds the Spring-side provenance.
+
+- **XML file and line on every bean definition.** Bean definitions registered from `@RuleScan(xmlLocations)` files carry an `XmlSource` (the `Resource` and the 1-based line of the element's start tag) as their `BeanDefinition.getSource()`, and the defining resource as their resource description. This covers top-level rules, validation rules, predefined validators, rule sets and rule flows, and the auto-named beans for inline rules and `<r:class-ref>`. The reader parses with a `LineTrackingDocumentLoader` (Spring's DOM parse plus a non-validating SAX pass that records lines) and an `XmlSourceExtractor`; both are public for readers you set up yourself. XML loaded another way (`@ImportResource`, `<import>`) keeps the file but has no line.
+- **XML-built artifacts report the file and line as their `SourceDefinition`.** Every factory bean (`rule`, `validationRule`, the predefined validators, `ruleset`, `ruleflow`, and `class-ref`) reads its own bean definition's `XmlSource` and passes it to the builder's new `source(...)` method, so `getDefinition().getSource()` gives `classpath:rules/order.xml` and the line instead of a Spring framework frame. `XmlSource` gains a `location` label: for `@RuleScan` folder scans it is the folder plus file name as declared (`classpath:rules/order/pricing.xml`), stable across machines, rather than the absolute file URL the scan resolved.
+- **`RuleRegistrarMetaInfo.xmlFiles()`** lists the XML files the declared locations resolved to and that were loaded, in load order, using the same location labels. The record has a new 4-component canonical constructor; the 3-argument one is kept.
+- **`SpringRuleRegistry.getNames()`** (required by rulii 2.1) returns the sorted bean names of every `Runnable` bean, including ancestor bean factories.
+- **`<r:param description="...">`** is kept: it reaches `InputParameter.description()` on rule sets and rule flows. `RuleSetFactoryBean.InputParameterDefinition` gains a 5-argument constructor and `getDescription()`.
+- **Category and tags in XML.** Every artifact element (`rule`, `validationRule`, the predefined validators, `ruleset`, `ruleflow`, and inline rules) takes `category="Pricing/Discounts"` and `tags="vip, discount"`, which reach rulii 2.1's `Categorized.getCategory()` and `getTags()` on the rule, rule set and rule flow definitions. A file-level `<r:defaults category="..." tags="..."/>` applies to every artifact in that file, like `<r:scripting>`: an element's `category` replaces the default, its `tags` are added to the default's. Both are descriptive only.
+- **Flow definitions name what the XML names.** `<r:context ref="x">` is reported by `RuleFlowDefinition.getContextLabel()` as `x`; `<r:bind ref="x">` steps report `x` as the label of their `CommandInfo.Bind` (with the bound names and kind, as before). Script binds (`<r:bind name="n">expr</r:bind>`) are `CommandInfo.Apply` steps with `as = n` and the expression text.
+
+### Bean lifecycle
+
+- **Closing a child context no longer shuts down the parent's rule infrastructure.** Spring republishes a child context's `ContextClosedEvent` to its parent, so `SpringRuleRegistry` and `SpringObjectFactory`, which released their bean factory from a `ContextClosedEvent` listener, went dead in the parent as soon as any child closed (Spring Cloud bootstrap, `SpringApplicationBuilder.child()`, `@ContextHierarchy`). Both are now `DisposableBean`s and release from their own container's destroy callback.
+- **The async pool shuts down with the context.** The `rulii.executorService` bean is now a `RuleExecutorService` (same fixed size, bounded queue of 1000 and caller-runs policy as before, threads named `rulii-exec-N`). On context close it stops accepting work, waits up to `rulii.executor.awaitTerminationSeconds` (default 10) for running and queued rules to finish, then interrupts what is left. The plain `shutdown()` it used before let a stuck rule keep the pool's non-daemon threads, and with them the context's class loader, alive indefinitely. The bean is `@ConditionalOnMissingBean(name = "rulii.executorService")`, so an application's own bean of that name still wins.
+- **Script processor factories are unregistered when the context closes.** `ScriptProcessorFactory` beans are registered with the JVM-wide `ScriptProcessorManager` by a new `ScriptProcessorFactoryRegistration` bean (replaceable with your own) and taken out again on destroy through rulii 2.1's `ScriptProcessorManager.unregister(factory)`. Previously a closed context stayed reachable from the manager through its factories (injected collaborators, the bean class loader), which matters for test suites, DevTools restarts and redeploys. Removal is by identity: a factory a newer context has since registered under the same language is left alone, and names this context had displaced fall back to service-loader discovery.
+- `SpringConverterAdapter` caches `TypeDescriptor`s in a `ConcurrentReferenceHashMap`, so the cache no longer pins types from unloaded class loaders.
+
 ## [2.0.0]
 
 ### rulii 2.0 Upgrade

@@ -25,7 +25,8 @@ import org.rulii.ruleflow.RuleFlow;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.registry.SpringRuleRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.event.ContextClosedEvent;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -111,6 +112,23 @@ public class SpringRuleRegistryTest {
     }
 
     @Test
+    public void testGetNamesListsEveryRunnableBeanSorted() {
+        assertEquals(List.of("rule1", "rule2", "ruleFlow1", "ruleSet1"), List.copyOf(registry.getNames()));
+        assertThrows(UnsupportedOperationException.class, () -> registry.getNames().add("x"));
+        for (String name : registry.getNames()) assertNotNull(registry.get(name), name + " must resolve");
+    }
+
+    @Test
+    public void testGetNamesIncludesParentContext() {
+        DefaultListableBeanFactory parent = new DefaultListableBeanFactory();
+        parent.registerSingleton("parentRule", mock(Rule.class));
+        DefaultListableBeanFactory child = new DefaultListableBeanFactory(parent);
+        child.registerSingleton("childRule", rule1);
+
+        assertEquals(List.of("childRule", "parentRule"), List.copyOf(new SpringRuleRegistry(child).getNames()));
+    }
+
+    @Test
     public void testGetByNameAndType() {
         assertEquals(rule1, registry.get("rule1", Rule.class));
     }
@@ -145,8 +163,8 @@ public class SpringRuleRegistryTest {
     }
 
     @Test
-    public void testHandleContextClosedEventNullsContext() {
-        registry.onContextClosed(mock(ContextClosedEvent.class));
+    public void testDestroyNullsContext() {
+        registry.destroy();
         assertThrows(UnrulyException.class, () -> registry.isNameInUse("anything"));
         assertThrows(UnrulyException.class, registry::getCount);
     }

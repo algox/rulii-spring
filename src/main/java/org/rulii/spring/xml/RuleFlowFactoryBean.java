@@ -17,8 +17,8 @@
  */
 package org.rulii.spring.xml;
 
-import org.rulii.bind.Bindings;
 import org.rulii.bind.BindingDeclaration;
+import org.rulii.model.SourceDefinition;
 import org.rulii.model.UnrulyException;
 import org.rulii.model.function.Function;
 import org.rulii.rule.Rule;
@@ -45,6 +45,7 @@ import org.rulii.spring.xml.RuleFlowCommandDefinition.WithParam;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.ClassUtils;
@@ -75,10 +76,12 @@ import java.util.function.Consumer;
  * @author Max Arulananthan
  * @since 2.0
  */
-public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, InitializingBean, BeanFactoryAware {
+public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, InitializingBean, BeanFactoryAware, BeanNameAware {
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
 
     private String contextRef;
@@ -90,6 +93,7 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
     private ScriptExpression returningExpression;
 
     private BeanFactory beanFactory;
+    private String beanName;
     private RuleFlow<?> ruleFlow;
 
     // Guards against reusing one ContainerCommand instance for several <command> bodies:
@@ -107,6 +111,11 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
     }
 
     @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void afterPropertiesSet() throws Exception {
         try {
@@ -114,9 +123,12 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
             builder.name(name);
             usedContainers.clear();
             if (StringUtils.hasText(description)) builder.description(description);
+            builder.category(category);
+            builder.tags(tags);
 
             if (contextRef != null) {
-                builder.context(beanFactory.getBean(contextRef, Consumer.class));
+                // The bean name is the label the flow's definition reports for its context.
+                builder.context(beanFactory.getBean(contextRef, Consumer.class), contextRef);
             }
 
             for (RuleSetFactoryBean.InputParameterDefinition param : params) {
@@ -124,9 +136,9 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
                 if (param.getDefaultValueExpression() != null) {
                     builder.param(param.getName(), type,
-                            (Function) param.getDefaultValueExpression().toFunction(defaultLanguage));
+                            (Function) param.getDefaultValueExpression().toFunction(defaultLanguage), param.getDescription());
                 } else {
-                    builder.param(param.getName(), type, param.isRequired());
+                    builder.param(param.getName(), type, param.isRequired(), param.getDescription());
                 }
             }
 
@@ -146,6 +158,10 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
                     builder.returning();
                 }
             }
+
+            // The bean definition knows the XML file and line; the flow reports them as its source.
+            SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+            if (source != null) builder.source(source);
 
             ruleFlow = builder.build();
         } catch (UnrulyException e) {
@@ -215,15 +231,9 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
         }
 
         if (bind.beanRef() != null) {
-            Object bean = beanFactory.getBean(bind.beanRef());
-
-            if (bean instanceof Bindings bindings) {
-                if (bind.scope() != null) builder.bindTo(bind.scope(), bindings);
-                else builder.bind(bindings);
-            } else {
-                if (bind.scope() != null) builder.bindTo(bind.scope(), bean);
-                else builder.bind(bean);
-            }
+            // Same semantics as bind(Bindings) / bind(Object); the bean name becomes the label
+            // the flow's definition reports for the step.
+            builder.bindBean(bind.scope(), bind.beanRef(), beanFactory.getBean(bind.beanRef()));
             return;
         }
 
@@ -422,6 +432,14 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {

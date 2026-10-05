@@ -28,6 +28,32 @@
         </complexType>
     </element>
 
+    <!-- ==================== Category and Tags ==================== -->
+
+    <!--
+        <rulii:defaults category="Pricing" tags="pricing, catalogue"/>
+
+        File-level defaults for the business category and tags of every rule, rule set,
+        rule flow and validation rule declared in this XML file. Like <rulii:scripting>,
+        the directive is scoped to the file and applies regardless of its position.
+
+        Every artifact element also takes the same two attributes:
+          category — where it belongs; at most one, with "/" between the levels of a
+                     hierarchy ("Pricing/Discounts"). An element's category replaces
+                     the file default.
+          tags     — what it is about, comma-separated. An element's tags are added to
+                     the file default's. Blanks are dropped and duplicates kept once.
+
+        Both are descriptive only: rulii never reads them when it runs. Tools such as
+        rulii-explorer group and filter by them.
+    -->
+    <element name="defaults">
+        <complexType>
+            <attribute name="category" type="string"/>
+            <attribute name="tags" type="string"/>
+        </complexType>
+    </element>
+
     <!-- ==================== Shared Script/Expression Types ==================== -->
 
     <!--
@@ -197,6 +223,8 @@
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
+            <attribute name="category" type="string"/>
+            <attribute name="tags" type="string"/>
             <!-- Terse forms of the condition/action child elements (default scripting
                  language; declaring both the attribute and the child element is a parse
                  error). The then attribute covers the single-action case only. -->
@@ -260,6 +288,8 @@
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
+            <attribute name="category" type="string"/>
+            <attribute name="tags" type="string"/>
             <attribute name="errorCode" type="string" use="required"/>
             <attribute name="severity" type="rulii:severityType" default="ERROR"/>
             <attribute name="errorMessage" type="string"/>
@@ -292,6 +322,8 @@
         <attribute name="expr" type="string"/>
         <attribute name="language" type="string"/>
         <attribute name="description" type="string"/>
+        <attribute name="category" type="string"/>
+        <attribute name="tags" type="string"/>
         <attribute name="errorCode" type="string"/>
         <attribute name="severity" type="rulii:severityType"/>
         <attribute name="errorMessage" type="string"/>
@@ -755,6 +787,8 @@
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
+            <attribute name="category" type="string"/>
+            <attribute name="tags" type="string"/>
             <attribute name="validating" type="boolean" default="false"/>
             <!-- Terse forms of the condition/action child elements (default scripting
                  language; declaring both the attribute and the child element is a parse
@@ -1008,6 +1042,8 @@
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
+            <attribute name="category" type="string"/>
+            <attribute name="tags" type="string"/>
             <!-- Terse forms of the finalizer/returning child elements (default scripting
                  language; declaring both the attribute and the child element is a parse
                  error). -->

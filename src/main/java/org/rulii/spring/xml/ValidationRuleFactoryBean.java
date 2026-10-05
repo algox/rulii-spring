@@ -19,12 +19,19 @@ package org.rulii.spring.xml;
 
 import org.rulii.model.UnrulyException;
 import org.rulii.rule.Rule;
+import org.rulii.model.SourceDefinition;
 import org.rulii.validation.Severity;
 import org.rulii.validation.ValidationRuleBuilder;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -39,10 +46,12 @@ import java.util.Locale;
  * @author Max Arulananthan
  * @since 1.0
  */
-public class ValidationRuleFactoryBean implements FactoryBean<Rule>, InitializingBean {
+public class ValidationRuleFactoryBean implements FactoryBean<Rule>, InitializingBean, BeanNameAware, BeanFactoryAware {
 
     private String name;
     private String description;
+    private String category;
+    private List<String> tags = new ArrayList<>();
     private String defaultLanguage;
 
     private ScriptExpression condition;
@@ -52,6 +61,8 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
     private String defaultMessage;
 
     private Rule rule;
+    private String beanName;
+    private BeanFactory beanFactory;
 
     public ValidationRuleFactoryBean() {
         super();
@@ -65,10 +76,15 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
 
         builder.errorCode(errorCode);
         if (StringUtils.hasText(description)) builder.description(description);
+        builder.category(category);
+        builder.tags(tags);
         if (StringUtils.hasText(severity)) builder.severity(Severity.valueOf(severity.toUpperCase(Locale.ROOT)));
         if (StringUtils.hasText(errorMessage)) builder.errorMessage(errorMessage);
         if (StringUtils.hasText(defaultMessage)) builder.defaultMessage(defaultMessage);
 
+        // The bean definition knows the XML file and line; the artifact reports them as its source.
+        SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
+        if (source != null) builder.source(source);
         rule = builder.build();
     }
 
@@ -84,6 +100,14 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public void setDefaultLanguage(String defaultLanguage) {
@@ -108,5 +132,14 @@ public class ValidationRuleFactoryBean implements FactoryBean<Rule>, Initializin
 
     public void setDefaultMessage(String defaultMessage) {
         this.defaultMessage = defaultMessage;
+    }
+    @Override
+    public void setBeanName(String beanName) {
+        this.beanName = beanName;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
     }
 }

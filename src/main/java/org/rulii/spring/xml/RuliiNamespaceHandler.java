@@ -22,6 +22,11 @@ import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
 
     /** The rulii namespace URI. */
@@ -61,6 +66,49 @@ public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
      * @param defaultValue the value to return when the attribute is absent or blank
      * @return the parsed boolean
      */
+    /**
+     * The category of an artifact element: its own {@code category} attribute, else the file's
+     * {@code <rulii:defaults category="...">}, else null.
+     *
+     * @param element the rule, rule set, rule flow or validation rule element
+     * @return the category as written, or null
+     * @since 2.1
+     */
+    static String getCategory(Element element) {
+        String own = element.getAttribute("category");
+        if (StringUtils.hasText(own)) return own;
+        Element defaults = defaults(element);
+        String fileLevel = defaults != null ? defaults.getAttribute("category") : null;
+        return StringUtils.hasText(fileLevel) ? fileLevel : null;
+    }
+
+    /**
+     * The tags of an artifact element: the file's {@code <rulii:defaults tags="...">} first,
+     * then the element's own {@code tags} attribute; both comma-separated. The builders trim,
+     * drop blanks and de-duplicate.
+     *
+     * @param element the rule, rule set, rule flow or validation rule element
+     * @return the tags as written, in order; empty when none
+     * @since 2.1
+     */
+    static List<String> getTags(Element element) {
+        List<String> tags = new ArrayList<>();
+        Element defaults = defaults(element);
+        if (defaults != null) tags.addAll(splitTags(defaults.getAttribute("tags")));
+        tags.addAll(splitTags(element.getAttribute("tags")));
+        return tags;
+    }
+
+    private static Element defaults(Element element) {
+        NodeList list = element.getOwnerDocument().getElementsByTagNameNS(NAMESPACE_URI, "defaults");
+        return list.getLength() > 0 ? (Element) list.item(0) : null;
+    }
+
+    private static List<String> splitTags(String value) {
+        if (!StringUtils.hasText(value)) return Collections.emptyList();
+        return Arrays.asList(value.split(","));
+    }
+
     static boolean parseBooleanAttribute(String value, boolean defaultValue) {
         if (!StringUtils.hasText(value)) return defaultValue;
 
@@ -71,6 +119,7 @@ public class RuliiNamespaceHandler extends NamespaceHandlerSupport {
     @Override
     public void init() {
         registerBeanDefinitionParser("scripting", new ScriptingBeanDefinitionParser());
+        registerBeanDefinitionParser("defaults", new DefaultsBeanDefinitionParser());
         registerBeanDefinitionParser("rule", new RuleBeanDefinitionParser());
         registerBeanDefinitionParser("validationRule", new ValidationRuleBeanDefinitionParser());
         registerBeanDefinitionParser("ruleset", new RuleSetBeanDefinitionParser());

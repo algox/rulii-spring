@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:r="http://www.rulii.org/schema/rulii"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.rulii.org/schema/rulii
+           https://www.rulii.org/spring/rulii-spring.xsd">
+
+    <r:scripting defaultLanguage="el"/>
+
+    <!-- Line 13: a one-line start tag -->
+    <r:rule name="SourceRule" given="#ctx.age >= 18"/>
+
+    <!-- A start tag spanning three lines: the line is where it begins (18) -->
+    <r:rule
+        name="MultiLineRule"
+        description="Declared across several lines">
+        <r:given>#ctx.age >= 21</r:given>
+    </r:rule>
+
+    <r:validationRule name="SourceValidationRule" errorCode="E1" given="#ctx.value > 0"/>
+
+    <r:notNull name="SourceNotNullRule" binding="value"/>
+
+    <r:ruleset name="SourceRuleSet">
+        <r:rules>
+            <r:rule name="SourceInlineRule" given="true"/>
+            <r:validationRule name="SourceInlineValidationRule" errorCode="E2" given="true"/>
+            <r:notBlank name="SourceInlineNotBlankRule" binding="name"/>
+            <r:class-ref class="org.rulii.spring.test.rules.reftest.RangeCheckRule">
+                <r:arg value="10"  type="int"/>
+                <r:arg value="100" type="int"/>
+            </r:class-ref>
+        </r:rules>
+    </r:ruleset>
+
+    <r:ruleflow name="SourceFlow">
+        <r:bind name="x" value="1"/>
+    </r:ruleflow>
+
+    <bean id="plainBean" class="java.lang.Object"/>
+
+</beans>

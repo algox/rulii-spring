@@ -20,16 +20,20 @@ package org.rulii.spring.test.annotation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.rulii.context.RuleContext;
+import org.rulii.model.SourceDefinition;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.rule.Rule;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.spring.annotation.RuleScan;
 import org.rulii.spring.config.RuleRegistrarMetaInfo;
+import org.rulii.spring.xml.XmlSource;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 
@@ -71,6 +75,9 @@ class RuleScanXmlLocationsTest {
 
     @Autowired
     private RuleRegistrarMetaInfo metaInfo;
+
+    @Autowired
+    private ConfigurableApplicationContext context;
 
     // ------------------------------------------------------------------
     // Bean registration
@@ -166,6 +173,49 @@ class RuleScanXmlLocationsTest {
         assertNotNull(metaInfo.xmlLocations());
         assertTrue(metaInfo.xmlLocations().contains("classpath:rules/xml-scan/"),
                 "xmlLocations should contain the declared folder");
+    }
+
+    @Test
+    void metaInfoListsTheXmlFilesLoaded() {
+        assertEquals(1, metaInfo.xmlFiles().size(), metaInfo.xmlFiles().toString());
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", metaInfo.xmlFiles().get(0), "folder scans are labelled folder + file name");
+    }
+
+    // ------------------------------------------------------------------
+    // XML source (file + line) on the bean definitions
+    // ------------------------------------------------------------------
+
+    @Test
+    void beanDefinitionsCarryTheirXmlFileAndLine() {
+        ConfigurableListableBeanFactory factory = context.getBeanFactory();
+
+        XmlSource ageRule = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlDeclaredAgeRule").getSource());
+        assertTrue(ageRule.resource().getDescription().contains("xml-scan-rules.xml"), ageRule.describe());
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", ageRule.location());
+        assertEquals(12, ageRule.line(), ageRule.describe());
+
+        XmlSource ruleSet = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlDeclaredRuleSet").getSource());
+        assertEquals(21, ruleSet.line(), ruleSet.describe());
+
+        // Inline rules inside <r:rules> are stamped too
+        XmlSource inline = assertInstanceOf(XmlSource.class, factory.getBeanDefinition("XmlInlineAdultCheck").getSource());
+        assertEquals(23, inline.line(), inline.describe());
+        assertTrue(factory.getBeanDefinition("XmlInlineAdultCheck").getResourceDescription().contains("xml-scan-rules.xml"));
+    }
+
+    @Test
+    void artifactsReportTheXmlFileAndLineAsTheirSource() {
+        SourceDefinition rule = ruleRegistry.getRule("XmlDeclaredAgeRule").getDefinition().getSource();
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", rule.getFileName());
+        assertEquals(12, rule.getLineNumber());
+        assertNull(rule.getClassName());
+
+        SourceDefinition ruleSet = ruleRegistry.getRuleSet("XmlDeclaredRuleSet").getDefinition().getSource();
+        assertEquals("classpath:rules/xml-scan/xml-scan-rules.xml", ruleSet.getFileName());
+        assertEquals(21, ruleSet.getLineNumber());
+
+        SourceDefinition inline = ruleRegistry.getRule("XmlInlineAdultCheck").getDefinition().getSource();
+        assertEquals(23, inline.getLineNumber());
     }
 
     @Test

@@ -20,15 +20,21 @@ package org.rulii.spring.test.xml;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.rulii.context.RuleContext;
+import org.rulii.context.RuleContextBuilder;
 import org.rulii.context.RuleContextOptions;
+import org.rulii.model.InputParameter;
 import org.rulii.registry.RuleRegistry;
 import org.rulii.ruleflow.RuleFlow;
+import org.rulii.ruleflow.RuleFlowDefinition;
+import org.rulii.ruleflow.info.CommandInfo;
 import org.rulii.spring.annotation.RuleScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -115,5 +121,44 @@ class RuleFlowXmlTest {
         assertEquals("", ctx.getBindings().getValue("snapshot"), "exit must skip the snapshot export");
         assertEquals(Boolean.FALSE, ctx.getBindings().getValue("ranViaRegistry"), "the then-branch must not have run");
         assertEquals(Boolean.TRUE, ctx.getBindings().getValue("finalized"), "finalizer must run even on early exit");
+    }
+
+    /** A context configurator bean for {@code <r:context ref>}. */
+    public static class NoOpContextConfigurer implements Consumer<RuleContextBuilder> {
+        public NoOpContextConfigurer() {
+            super();
+        }
+
+        @Override
+        public void accept(RuleContextBuilder builder) {
+            // nothing to configure - the definition only records the bean name
+        }
+    }
+
+    @Test
+    void definitionNamesTheContextAndBindRefBeans() {
+        RuleFlow<?> flow = ruleRegistry.getRuleFlow("IntrospectionFlow");
+        RuleFlowDefinition def = flow.getDefinition();
+
+        assertEquals("flowContext", def.getContextLabel(), "<r:context ref> must be labelled with the bean name");
+
+        InputParameter<?> seedParam = def.getInputParameters().get(0);
+        assertEquals("seed", seedParam.name());
+        assertEquals("Starting value", seedParam.description());
+
+        CommandInfo.Bind bind = assertInstanceOf(CommandInfo.Bind.class, def.getCommands().get(0));
+        assertEquals("flowDefaults", bind.label(), "<r:bind ref> must be labelled with the bean name");
+        assertEquals(CommandInfo.BindKind.MAP, bind.kind());
+        assertEquals(1, bind.names().size());
+        assertEquals("rate", bind.names().get(0).name());
+
+        // A script bind is an apply(...).as(name): its expression text is kept.
+        CommandInfo.Apply apply = assertInstanceOf(CommandInfo.Apply.class, def.getCommands().get(1));
+        assertEquals("doubled", apply.as());
+        assertEquals("#ctx.seed * 2", apply.fn().sourceText());
+
+        assertEquals(6, flow.run(seed -> 3), "the labelled bind still binds the map entries");
+        assertNull(ruleRegistry.getRuleFlow("OrderFlow").getDefinition().getContextLabel(), "no <r:context> means no label");
+        assertEquals("Order total", ruleRegistry.getRuleFlow("OrderFlow").getDefinition().getInputParameters().get(0).description());
     }
 }

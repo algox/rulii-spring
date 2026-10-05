@@ -23,10 +23,10 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.util.Assert;
+import org.springframework.util.ConcurrentReferenceHashMap;
 
 import java.lang.reflect.Type;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Adapter class that implements the Converter interface to adapt Spring's ConversionService for conversion between objects.
@@ -35,7 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Conversion failures are wrapped in rulii's {@link ConversionException} per the
  * {@link Converter} contract. {@link TypeDescriptor}s are cached per declared {@link Type}
  * (types from rule signatures are a small, stable set) to avoid per-call allocation on the
- * parameter-resolution hot path.
+ * parameter-resolution hot path. The cache holds its entries softly (the same
+ * {@link ConcurrentReferenceHashMap} Spring uses for its own type caches), so it can never
+ * pin types or grow without bound.
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -44,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SpringConverterAdapter implements Converter<Object, Object> {
 
     private final ConversionService conversionService;
-    private final Map<Type, TypeDescriptor> descriptorCache = new ConcurrentHashMap<>();
+    private final Map<Type, TypeDescriptor> descriptorCache = new ConcurrentReferenceHashMap<>();
 
     /**
      * Constructs a new SpringConverterAdapter with the specified ConversionService.
