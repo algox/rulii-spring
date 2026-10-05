@@ -35,7 +35,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>2.1.0-SNAPSHOT</rulii.version>
+        <rulii.version>2.1.0</rulii.version>
         <spring.beans.version>7.0.9</spring.beans.version>
         <spring.context.version>7.0.9</spring.context.version>
         <spring.boot.autoconfigure.version>4.1.1</spring.boot.autoconfigure.version>
