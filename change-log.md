@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.0]
+
+### Bean Validation
+
+Built against rulii `2.2.0`.
+
+- **rulii-bean-validation as the application's Bean Validation provider.** With `org.rulii:rulii-bean-validation` on the classpath (an optional dependency of this module) the new auto-configuration `org.rulii.spring.validation.BeanValidationConfig` defines the `defaultValidator` bean before Spring Boot's validation auto-configuration would: a `LocalValidatorFactoryBean` pinned to `RuliiValidationProvider`, so the rulii provider is selected whatever the classpath order (the Jakarta bootstrap otherwise takes the first provider it finds, and Boot's validation starter brings Hibernate Validator). The provider's configuration receives the Spring `RuleRegistry` (a `@Validate` name is a bean name), the Spring `RuleContextOptions`, every `ConstraintMapper` and `ValueExtractor` bean, and the properties `rulii.validation.failFast` and `rulii.validation.registerFlows`; Boot's `ValidationConfigurationCustomizer` beans are applied after that, and Boot's method validation post-processor works unchanged. The unwrapped `BeanValidator` is a bean too. `rulii.validation.enabled=false` switches the whole thing off. Requires Boot's `spring-boot-validation` module, which the validation starter brings.
+- **`rulii.script.defaultLanguage` from the Spring `Environment`.** The `ScriptProcessorManager` bean now takes the default scripting language from that property in `application.properties`, as it takes it from the system property of the same name, so `@Expr` and script rules that name no language get it from configuration.
+
 ## [2.1.0]
 
 ### Introspection support for rulii-explorer

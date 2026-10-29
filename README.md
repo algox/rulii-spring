@@ -26,6 +26,7 @@
 - [Building RuleSets](#building-rulesets)
 - [Using RuleSets in Services](#using-rulesets-in-services)
 - [SpEL Scripting](#spel-scripting)
+- [Bean Validation](#bean-validation)
 - [Rules, RuleSets & RuleFlows in XML](#rules-rulesets--ruleflows-in-xml)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -51,6 +52,7 @@ reading this guide.
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
 - Spring Expression Language (SpEL) as a rule scripting language
+- Jakarta Bean Validation on rulii: with [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) on the classpath, the application's `Validator` runs on the rule engine, wired into the Spring rulii context
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
@@ -247,6 +249,64 @@ A few things worth knowing:
 
 SpEL is the default choice in XML rule files, but any JSR-223 language registered with rulii's
 `ScriptProcessorManager` (e.g. JavaScript, Groovy) can be used as well.
+
+---
+
+## Bean Validation
+
+With [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) on the classpath, rulii-spring makes it the
+application's Bean Validation provider and wires it into the Spring rulii context. Nothing else to configure:
+
+```xml
+<dependency>
+    <groupId>org.rulii</groupId>
+    <artifactId>rulii-bean-validation</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+The auto-configuration defines the `Validator` bean that Spring Boot would otherwise define, pinned to the rulii
+provider. So it is selected even when Hibernate Validator is still on the classpath (Boot's validation starter brings
+it in; exclude `hibernate-validator` and keep `tomcat-embed-el`, the EL implementation messages use). Boot's method
+validation (`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
+
+What the wiring gives you:
+
+- **`@Validate` names are bean names.** A rule, rule set or rule flow discovered by `@RuleScan`, or declared with
+  `@Bean` or in XML, is attachable to a bean by its name: `@Validate("orderRules")`.
+- **Constraint validators are Spring beans**, created through the bean factory with injection, as Boot does.
+- **Messages** resolve through the Spring `Environment` as rulii-spring's messages already do; the standard
+  `ValidationMessages.properties` keeps working.
+- **SpEL in `@Expr`**: `@Expr(value = "#ctx.end.isAfter(#ctx.start)", lang = "el", errorCode = "trip.end")`, or set
+  `rulii.script.defaultLanguage=el` in `application.properties` and leave `lang` out.
+- **The rulii validator as a bean**: inject `BeanValidator` for `validateIn`, the materialized rules or the per-class
+  flows.
+
+```java
+@Validate("orderRules")
+public class Order {
+    @NotNull @Size(min = 2, max = 5)
+    String code;
+}
+
+@Service
+public class OrderService {
+
+    private final Validator validator;   // rulii's, through the standard interface
+
+    public void place(@Valid Order order) { ... }
+}
+```
+
+| Property | Default | What it does |
+|---|---|---|
+| `rulii.validation.enabled` | `true` | `false` leaves the `Validator` bean to Spring Boot |
+| `rulii.validation.failFast` | `false` | stop at the first violation |
+| `rulii.validation.registerFlows` | `false` | register each class's validation flow in the rule registry as the class is first used |
+| `rulii.script.defaultLanguage` | none | the scripting language of `@Expr` and script rules that name none |
+
+`ConstraintMapper` and `ValueExtractor` beans in the context are added to the provider. See the
+[rulii-bean-validation README](https://github.com/algox/rulii-bean-validation) for `@Validate`, `@Expr` and the rest.
 
 ---
 

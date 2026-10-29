@@ -246,13 +246,20 @@ public class RuleConfig {
      * {@link ScriptProcessorFactoryRegistration} bean instead.
      *
      * @param registration the context's factory registration, when present
+     * @param environment the Spring Environment; {@code rulii.script.defaultLanguage} in it names the default scripting language
      * @return the singleton ScriptProcessorManager instance
      */
     @Bean(BeanNames.SCRIPT_MANAGER)
     @ConditionalOnMissingBean(ScriptProcessorManager.class)
-    public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactoryRegistration> registration) {
+    public ScriptProcessorManager scriptProcessorManager(ObjectProvider<ScriptProcessorFactoryRegistration> registration,
+                                                        Environment environment) {
         registration.getIfAvailable();
-        return ScriptProcessorManager.getInstance();
+        ScriptProcessorManager result = ScriptProcessorManager.getInstance();
+        // The default scripting language declared in the Spring Environment (application.properties) reaches the manager,
+        // as the system property of the same name does.
+        String defaultLanguage = environment.getProperty(ScriptProcessorManager.DEFAULT_LANGUAGE_PROPERTY);
+        if (defaultLanguage != null && !defaultLanguage.isBlank()) result.setDefaultLanguage(defaultLanguage);
+        return result;
     }
 
     /**

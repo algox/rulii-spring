@@ -35,13 +35,15 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>2.1.0</rulii.version>
+        <rulii.version>2.2.0-SNAPSHOT</rulii.version>
         <spring.beans.version>7.0.9</spring.beans.version>
         <spring.context.version>7.0.9</spring.context.version>
         <spring.boot.autoconfigure.version>4.1.1</spring.boot.autoconfigure.version>
         <logback.classic.version>1.5.38</logback.classic.version>
         <junit.version>6.0.3</junit.version>
         <spring.boot.starter.test.version>4.1.1</spring.boot.starter.test.version>
+        <rulii.bean.validation.version>1.0-SNAPSHOT</rulii.bean.validation.version>
+        <hibernate.validator.version>9.0.1.Final</hibernate.validator.version>
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
@@ -82,6 +84,21 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Bean Validation integration: optional, the auto-configuration is conditional on both. -->
+        <dependency>
+            <groupId>org.rulii</groupId>
+            <artifactId>rulii-bean-validation</artifactId>
+            <version>${rulii.bean.validation.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-validation</artifactId>
+            <version>${spring.boot.autoconfigure.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -100,6 +117,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <version>${spring.boot.starter.test.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- In tests only, to prove the rulii provider is selected over it. -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>${hibernate.validator.version}</version>
             <scope>test</scope>
         </dependency>
 
