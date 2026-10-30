@@ -52,7 +52,7 @@ reading this guide.
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
 - Spring Expression Language (SpEL) as a rule scripting language
-- Jakarta Bean Validation on rulii: with [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) on the classpath, the application's `Validator` runs on the rule engine, wired into the Spring rulii context
+- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine, wired into the Spring rulii context
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
@@ -254,21 +254,32 @@ SpEL is the default choice in XML rule files, but any JSR-223 language registere
 
 ## Bean Validation
 
-With [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) on the classpath, rulii-spring makes it the
-application's Bean Validation provider and wires it into the Spring rulii context. Nothing else to configure:
+rulii-spring comes with [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) and makes it the
+application's Bean Validation provider, wired into the Spring rulii context. Nothing to add and nothing to configure:
+the auto-configuration defines the `Validator` bean that Spring Boot would otherwise define, pinned to the rulii
+provider, so it is selected even when Hibernate Validator is still on the classpath. Boot's method validation
+(`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
+
+Keep Boot's validation starter, which brings the Boot wiring and `tomcat-embed-el`, the EL implementation messages
+use, but take Hibernate Validator out of it:
 
 ```xml
 <dependency>
-    <groupId>org.rulii</groupId>
-    <artifactId>rulii-bean-validation</artifactId>
-    <version>1.0.0</version>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-validation</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </exclusion>
+    </exclusions>
 </dependency>
 ```
 
-The auto-configuration defines the `Validator` bean that Spring Boot would otherwise define, pinned to the rulii
-provider. So it is selected even when Hibernate Validator is still on the classpath (Boot's validation starter brings
-it in; exclude `hibernate-validator` and keep `tomcat-embed-el`, the EL implementation messages use). Boot's method
-validation (`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
+**Staying on Hibernate Validator.** `rulii.validation.enabled=false` opts out. With Hibernate Validator on the
+classpath rulii-spring then defines the `Validator` bean pinned to it, with Boot's message interpolation and
+customizers, so the application validates exactly as it did before; without it, Boot's own auto-configuration
+bootstraps the one provider there is.
 
 What the wiring gives you:
 
@@ -300,7 +311,7 @@ public class OrderService {
 
 | Property | Default | What it does |
 |---|---|---|
-| `rulii.validation.enabled` | `true` | `false` leaves the `Validator` bean to Spring Boot |
+| `rulii.validation.enabled` | `true` | `false` keeps Bean Validation off the rule engine: the `Validator` bean is pinned to Hibernate Validator when present, otherwise left to Spring Boot |
 | `rulii.validation.failFast` | `false` | stop at the first violation |
 | `rulii.validation.registerFlows` | `false` | register each class's validation flow in the rule registry as the class is first used |
 | `rulii.script.defaultLanguage` | none | the scripting language of `@Expr` and script rules that name none |

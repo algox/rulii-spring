@@ -84,12 +84,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Bean Validation integration: optional, the auto-configuration is conditional on both. -->
+        <!-- Bean Validation on rulii comes with this module; rulii.validation.enabled=false opts out. -->
         <dependency>
             <groupId>org.rulii</groupId>
             <artifactId>rulii-bean-validation</artifactId>
             <version>${rulii.bean.validation.version}</version>
-            <optional>true</optional>
         </dependency>
 
         <dependency>

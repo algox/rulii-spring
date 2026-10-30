@@ -55,15 +55,15 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
  * validates through this bean, so {@code @Validated} services work unchanged.</p>
  *
  * <p>The unwrapped {@link BeanValidator} is a bean too, for code that wants {@code validateIn} or the materialized
- * flows without unwrapping. {@code rulii.validation.enabled=false} switches all of this off and leaves the
- * {@code Validator} bean to Boot.</p>
+ * flows without unwrapping. rulii-bean-validation comes with rulii-spring, so this is on in every Boot application
+ * that has Boot's validation module; {@code rulii.validation.enabled=false} switches it off, and
+ * {@link BeanValidationOptOutConfig} then keeps Hibernate Validator the provider when it is present.</p>
  *
  * @author Max Arulananthan
  * @since 2.2
  */
 @AutoConfiguration(beforeName = "org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration")
-@ConditionalOnClass(name = {"org.rulii.validation.beans.BeanValidator",
-        "org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer"})
+@ConditionalOnClass(name = "org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer")
 @ConditionalOnProperty(name = "rulii.validation.enabled", havingValue = "true", matchIfMissing = true)
 public class BeanValidationConfig {
 

@@ -1,2 +1,3 @@
 org.rulii.spring.config.RuleConfig
 org.rulii.spring.validation.BeanValidationConfig
+org.rulii.spring.validation.BeanValidationOptOutConfig
