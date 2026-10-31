@@ -313,7 +313,6 @@ public class OrderService {
 |---|---|---|
 | `rulii.validation.enabled` | `true` | `false` keeps Bean Validation off the rule engine: the `Validator` bean is pinned to Hibernate Validator when present, otherwise left to Spring Boot |
 | `rulii.validation.failFast` | `false` | stop at the first violation |
-| `rulii.validation.registerFlows` | `false` | register each class's validation flow in the rule registry as the class is first used |
 | `rulii.script.defaultLanguage` | none | the scripting language of `@Expr` and script rules that name none |
 
 `ConstraintMapper` and `ValueExtractor` beans in the context are added to the provider. See the

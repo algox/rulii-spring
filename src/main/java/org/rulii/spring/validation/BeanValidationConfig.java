@@ -50,7 +50,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
  * it finds, in classpath order; Boot's validation starter brings Hibernate Validator). The provider's
  * {@link RuliiConfiguration} is given the Spring {@link RuleRegistry} (so a {@code @Validate} name is a bean name),
  * the Spring {@link RuleContextOptions}, every {@link ConstraintMapper} and {@link ValueExtractor} bean, and the
- * {@code rulii.validation.failFast} / {@code rulii.validation.registerFlows} properties; Boot's
+ * {@code rulii.validation.failFast} property; Boot's
  * {@link ValidationConfigurationCustomizer} beans are applied after that. Boot's method validation post-processor
  * validates through this bean, so {@code @Validated} services work unchanged.</p>
  *
@@ -89,7 +89,6 @@ public class BeanValidationConfig {
      * @param extractors value extractor beans, if any.
      * @param customizers Boot's configuration customizers, if any.
      * @param failFast {@code rulii.validation.failFast}; stop at the first violation.
-     * @param registerFlows {@code rulii.validation.registerFlows}; register each class's validation flow in the registry.
      * @return the validator factory bean.
      */
     @Bean(name = VALIDATOR_BEAN_NAME)
@@ -100,12 +99,11 @@ public class BeanValidationConfig {
                                                              ObjectProvider<ConstraintMapper<?>> mappers,
                                                              ObjectProvider<ValueExtractor<?>> extractors,
                                                              ObjectProvider<ValidationConfigurationCustomizer> customizers,
-                                                             @Value("${rulii.validation.failFast:false}") boolean failFast,
-                                                             @Value("${rulii.validation.registerFlows:false}") boolean registerFlows) {
+                                                             @Value("${rulii.validation.failFast:false}") boolean failFast) {
         LocalValidatorFactoryBean result = new LocalValidatorFactoryBean();
         result.setProviderClass(RuliiValidationProvider.class);
         result.setConfigurationInitializer(configuration -> {
-            configure(configuration, ruleRegistry, options, mappers, extractors, failFast, registerFlows);
+            configure(configuration, ruleRegistry, options, mappers, extractors, failFast);
             customizers.orderedStream().forEach(customizer -> customizer.customize(configuration));
         });
         return result;
@@ -127,7 +125,7 @@ public class BeanValidationConfig {
 
     private static void configure(Configuration<?> configuration, ObjectProvider<RuleRegistry> ruleRegistry,
                                   ObjectProvider<RuleContextOptions> options, ObjectProvider<ConstraintMapper<?>> mappers,
-                                  ObjectProvider<ValueExtractor<?>> extractors, boolean failFast, boolean registerFlows) {
+                                  ObjectProvider<ValueExtractor<?>> extractors, boolean failFast) {
         if (!(configuration instanceof RuliiConfiguration rulii)) {
             LOGGER.warn("Validator configuration is [{}], not rulii's; the Spring rulii context is not applied.",
                     configuration.getClass().getName());
@@ -140,7 +138,6 @@ public class BeanValidationConfig {
         if (registry != null) rulii.registry(registry);
         if (contextOptions != null) rulii.options(contextOptions);
         rulii.failFast(failFast);
-        rulii.registerFlows(registerFlows);
 
         for (ConstraintMapper<?> mapper : mappers.orderedStream().toList()) {
             rulii.mapper(mapper);
