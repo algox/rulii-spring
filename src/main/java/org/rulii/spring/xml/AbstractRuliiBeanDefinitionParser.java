@@ -55,6 +55,34 @@ abstract class AbstractRuliiBeanDefinitionParser extends AbstractSingleBeanDefin
      * @param element       the element that declared it
      * @param parserContext the parser context
      */
+    /**
+     * The result type declared on a ruleset or ruleflow: the {@code result-type} attribute on the parent, or
+     * the {@code type} attribute on its result function element ({@code <result-extractor>}, {@code <returning>}).
+     * Declaring both is reported as a parse error with the XML source location.
+     *
+     * @param parent         the ruleset or ruleflow element.
+     * @param resultFunction the result function child element; may be null.
+     * @param parentName     the parent's element name, for the error.
+     * @param functionName   the result function's element name, for the error.
+     * @param parserContext  the parser context used for error reporting.
+     * @return the fully-qualified class name, or null when neither form is declared.
+     */
+    static String resultTypeName(Element parent, Element resultFunction, String parentName, String functionName,
+                                 ParserContext parserContext) {
+        String onParent = parent.getAttribute("result-type");
+        String onFunction = resultFunction != null ? resultFunction.getAttribute("type") : null;
+
+        if (StringUtils.hasText(onParent) && StringUtils.hasText(onFunction)) {
+            parserContext.getReaderContext().error("<" + parentName + "> declares the result type both as [result-type]"
+                    + " and as [type] on <" + functionName + ">; use one or the other.", parent);
+        }
+
+        if (StringUtils.hasText(onParent)) return onParent.trim();
+        if (StringUtils.hasText(onFunction)) return onFunction.trim();
+
+        return null;
+    }
+
     static void stampSource(AbstractBeanDefinition def, Element element, ParserContext parserContext) {
         def.setResource(parserContext.getReaderContext().getResource());
         def.setSource(parserContext.extractSource(element));

@@ -52,7 +52,7 @@ reading this guide.
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
 - Spring Expression Language (SpEL) as a rule scripting language
-- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine, wired into the Spring rulii context
+- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine, wired into the Spring rulii context; [rulii-explorer](https://github.com/algox/rulii-explorer) can show the validated beans and their constraints (`rulii.explorer.beans.enabled=true`)
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
@@ -402,8 +402,13 @@ Group rules — declared in the same file or referenced by bean name — with op
         <r:bean-ref name="NameRequiredRule"/>
         <r:bean-ref name="EmailRule"/>
     </r:rules>
+    <r:result-extractor type="org.rulii.validation.RuleViolations">#ctx.ruleViolations</r:result-extractor>
 </r:ruleset>
 ```
+
+A script cannot declare its return type, so `type` on `<r:result-extractor>` (or `result-type` on the ruleset;
+one or the other) records the result type in the ruleset's definition. Without it, a ruleset with no extractor
+reports `RuleSetExecutionStatus` and one with a script extractor reports its type as unknown.
 
 ### RuleFlows
 
@@ -436,9 +441,12 @@ conditionals, loops, scopes, exception handlers, and a returning value:
     </r:on-exception>
 
     <r:finalizer>#ctx.done = true</r:finalizer>
-    <r:returning>#ctx.status</r:returning>
+    <r:returning type="java.lang.String">#ctx.status</r:returning>
 </r:ruleflow>
 ```
+
+As for a ruleset, `type` on `<r:returning>` (or `result-type` on the ruleflow) records the result type in the
+flow's definition; it needs a returning expression, since a flow without one returns its `RuleContext`.
 
 Async execution is built in: `<r:async-run>` fans work out, `<r:then-run>` chains continuations, and
 `<r:await>` / `<r:await-all>` / `<r:await-any>` (with `timeout` + `unit`) join the results. Custom

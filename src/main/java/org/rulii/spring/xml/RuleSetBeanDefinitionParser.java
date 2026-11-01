@@ -121,6 +121,10 @@ class RuleSetBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
             builder.addPropertyValue("resultExtractor", ScriptExpression.parse(resultExtractor, parserContext));
         }
 
+        // result-type="..." attribute, or type="..." on <result-extractor>
+        String resultType = resultTypeName(element, resultExtractor, "ruleset", "result-extractor", parserContext);
+        if (resultType != null) builder.addPropertyValue("resultTypeName", resultType);
+
         // <error-handler>
         Element errorHandler = DomUtils.getChildElementByTagName(element, "error-handler");
         if (errorHandler != null) {

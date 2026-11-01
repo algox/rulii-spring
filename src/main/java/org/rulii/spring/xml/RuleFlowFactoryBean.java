@@ -91,6 +91,7 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
     private ScriptExpression finalizer;
     private boolean returningDeclared;
     private ScriptExpression returningExpression;
+    private String resultTypeName;
 
     private BeanFactory beanFactory;
     private String beanName;
@@ -158,6 +159,9 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
                     builder.returning();
                 }
             }
+
+            // After returning(): a stated type with no returning expression is rejected by build().
+            if (resultTypeName != null) builder.resultType(loadClass(resultTypeName, "result-type"));
 
             // The bean definition knows the XML file and line; the flow reports them as its source.
             SourceDefinition source = BeanSources.sourceOf(beanFactory, beanName);
@@ -472,5 +476,16 @@ public class RuleFlowFactoryBean implements FactoryBean<RuleFlow<?>>, Initializi
 
     public void setReturningExpression(ScriptExpression returningExpression) {
         this.returningExpression = returningExpression;
+    }
+
+    /**
+     * The result type declared in the XML ({@code result-type} on the ruleflow, or {@code type} on
+     * {@code <returning>}), as a fully-qualified class name.
+     *
+     * @param resultTypeName the class name; null when none was declared.
+     * @since 2.2
+     */
+    public void setResultTypeName(String resultTypeName) {
+        this.resultTypeName = resultTypeName;
     }
 }

@@ -125,6 +125,10 @@ class RuleFlowBeanDefinitionParser extends AbstractRuliiBeanDefinitionParser {
             // returns its RuleContext; with an expression it maps to returning(Function).
             builder.addPropertyValue("returningExpression", ScriptExpression.tryParse(returning));
         }
+
+        // result-type="..." attribute, or type="..." on <returning>
+        String resultType = resultTypeName(element, returning, "ruleflow", "returning", parserContext);
+        if (resultType != null) builder.addPropertyValue("resultTypeName", resultType);
     }
 
     /** Parses a command sequence: every child element of the given container is a command. */

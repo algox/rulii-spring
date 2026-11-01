@@ -19,6 +19,7 @@ package org.rulii.spring.xml;
 
 import org.rulii.rule.Rule;
 import org.rulii.model.SourceDefinition;
+import org.rulii.model.UnrulyException;
 import org.rulii.ruleset.RuleSet;
 import org.rulii.ruleset.RuleSetBuilder;
 import org.springframework.beans.BeansException;
@@ -63,6 +64,7 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
     private ScriptExpression finalizer;
     private ScriptExpression resultExtractor;
     private ScriptExpression errorHandler;
+    private String resultTypeName;
 
     private RuleSet<?> ruleSet;
     private String beanName;
@@ -105,6 +107,8 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
         if (finalizer != null) builder.finalizer(finalizer.toAction(defaultLanguage));
 
         if (resultExtractor != null) builder.resultExtractor(resultExtractor.toFunction(defaultLanguage));
+
+        if (resultTypeName != null) builder.resultType(loadClass(resultTypeName, "result-type"));
 
         if (errorHandler != null) builder.errorHandler(errorHandler.toFunction(defaultLanguage));
 
@@ -178,6 +182,26 @@ public class RuleSetFactoryBean implements FactoryBean<RuleSet<?>>, Initializing
 
     public void setErrorHandler(ScriptExpression errorHandler) {
         this.errorHandler = errorHandler;
+    }
+
+    /**
+     * The result type declared in the XML ({@code result-type} on the ruleset, or {@code type} on
+     * {@code <result-extractor>}), as a fully-qualified class name.
+     *
+     * @param resultTypeName the class name; null when none was declared.
+     * @since 2.2
+     */
+    public void setResultTypeName(String resultTypeName) {
+        this.resultTypeName = resultTypeName;
+    }
+
+    private Class<?> loadClass(String className, String where) {
+        try {
+            return ClassUtils.forName(className, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new UnrulyException("Unable to load class [" + className + "] declared in " + where
+                    + " of ruleset [" + name + "].", e);
+        }
     }
 
     // -------------------------------------------------------------------------

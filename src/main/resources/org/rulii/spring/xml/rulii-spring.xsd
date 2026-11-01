@@ -104,6 +104,19 @@
         <attribute name="language" type="string"/>
     </complexType>
 
+    <!--
+        A function that produces the result of a ruleset or a ruleflow. As functionType, plus
+        the result type the function returns (a fully-qualified class name), recorded in the
+        definition; a script cannot declare its return type, so without it the result type is
+        unknown. Equivalent to the result-type attribute on the parent element; declaring both
+        is a parse error.
+    -->
+    <complexType name="resultFunctionType" mixed="true">
+        <attribute name="expr" type="string"/>
+        <attribute name="language" type="string"/>
+        <attribute name="type" type="string"/>
+    </complexType>
+
     <!-- ==================== Parameter Type ==================== -->
 
     <!--
@@ -711,6 +724,11 @@
         Attributes:
           name        — unique ruleset identifier (required)
           description — optional human-readable description
+          result-type — fully-qualified class name of the result, recorded in the ruleset's
+                        definition (equivalent to the type attribute on <result-extractor>;
+                        declaring both is a parse error). Without it the type is derived:
+                        a ruleset without a result extractor returns its
+                        RuleSetExecutionStatus; a script extractor leaves it unknown.
 
         Child elements (all optional unless noted):
           param          — declares an input parameter; may appear multiple times
@@ -724,7 +742,8 @@
                            before the remaining rules are processed
           finalizer      — action executed once after rule processing completes
                            (even when stopped early by the stop-condition)
-          result-extractor — function producing the ruleset result after execution
+          result-extractor — function producing the ruleset result after execution;
+                             its type attribute states the result type
           error-handler    — function invoked when a rule raises an error
     -->
     <element name="ruleset">
@@ -782,7 +801,7 @@
                 </element>
                 <element name="stop-condition" type="rulii:conditionType" minOccurs="0"/>
                 <element name="finalizer" type="rulii:actionType" minOccurs="0"/>
-                <element name="result-extractor" type="rulii:functionType" minOccurs="0"/>
+                <element name="result-extractor" type="rulii:resultFunctionType" minOccurs="0"/>
                 <element name="error-handler" type="rulii:functionType" minOccurs="0"/>
             </sequence>
             <attribute name="name" type="string" use="required"/>
@@ -790,6 +809,7 @@
             <attribute name="category" type="string"/>
             <attribute name="tags" type="string"/>
             <attribute name="validating" type="boolean" default="false"/>
+            <attribute name="result-type" type="string"/>
             <!-- Terse forms of the condition/action child elements (default scripting
                  language; declaring both the attribute and the child element is a parse
                  error). -->
@@ -824,6 +844,11 @@
               </when>
               <returning>#ctx.total</returning>
           </rulii:ruleflow>
+
+        Result type: <returning type="com.example.Total"> or result-type="com.example.Total"
+        on the ruleflow (one or the other) records the result type in the flow's definition;
+        a script cannot declare its return type, so without it the type is unknown. It needs
+        a returning expression: a flow returning its RuleContext has no result type.
 
         Run/async-run targets — exactly one of (parser-enforced):
           bean-ref — a Spring bean (Rule, RuleSet, or RuleFlow), resolved at wiring time
@@ -1038,7 +1063,7 @@
                 <group ref="rulii:ruleFlowCommands" minOccurs="0" maxOccurs="unbounded"/>
                 <element name="on-exception" type="rulii:ruleFlowHandlerType" minOccurs="0"/>
                 <element name="finalizer" type="rulii:actionType" minOccurs="0"/>
-                <element name="returning" type="rulii:functionType" minOccurs="0"/>
+                <element name="returning" type="rulii:resultFunctionType" minOccurs="0"/>
             </sequence>
             <attribute name="name" type="string" use="required"/>
             <attribute name="description" type="string"/>
@@ -1049,6 +1074,10 @@
                  error). -->
             <attribute name="finalizer" type="string"/>
             <attribute name="returning" type="string"/>
+            <!-- The result type (fully-qualified class name), equivalent to the type attribute
+                 on <returning>; declaring both is a parse error. Requires a returning
+                 expression: a flow returning its RuleContext has no result type. -->
+            <attribute name="result-type" type="string"/>
         </complexType>
     </element>
 
