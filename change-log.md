@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.0] (unreleased)
+
+### Build
+
+- The jar manifest now carries the default implementation and specification entries (`Implementation-Title`, `Implementation-Version`, `Implementation-Vendor`), so the rulii-spring version can be read at runtime through `Package.getImplementationVersion()`, as rulii 2.3 does for its own jar.
+
 ## [2.2.0]
 
 ### Bean Validation
