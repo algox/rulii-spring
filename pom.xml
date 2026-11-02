@@ -6,7 +6,7 @@
 
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>2.2.0-SNAPSHOT</version>
+    <version>2.2.0</version>
     <packaging>jar</packaging>
 
     <name>rulii-spring</name>
@@ -35,14 +35,14 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <rulii.version>2.2.0-SNAPSHOT</rulii.version>
+        <rulii.version>2.2.0</rulii.version>
         <spring.beans.version>7.0.9</spring.beans.version>
         <spring.context.version>7.0.9</spring.context.version>
         <spring.boot.autoconfigure.version>4.1.1</spring.boot.autoconfigure.version>
         <logback.classic.version>1.5.38</logback.classic.version>
         <junit.version>6.0.3</junit.version>
         <spring.boot.starter.test.version>4.1.1</spring.boot.starter.test.version>
-        <rulii.bean.validation.version>1.0-SNAPSHOT</rulii.bean.validation.version>
+        <rulii.bean.validation.version>1.0.0</rulii.bean.validation.version>
         <hibernate.validator.version>9.0.1.Final</hibernate.validator.version>
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>

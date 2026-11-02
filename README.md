@@ -68,13 +68,13 @@ reading this guide.
 <dependency>
     <groupId>org.rulii</groupId>
     <artifactId>rulii-spring</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
 **Gradle**
 ```groovy
-implementation 'org.rulii:rulii-spring:2.1.0'
+implementation 'org.rulii:rulii-spring:2.2.0'
 ```
 
 > rulii-spring transitively pulls in `org.rulii:rulii`. You do not need to declare it separately.
