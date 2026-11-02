@@ -1,4 +1,4 @@
-[rulii-spring Maven Central]:http://search.maven.org/#artifactdetails|org.rulii|rulii-spring|1.2.0|
+[rulii-spring Maven Central]:https://central.sonatype.com/artifact/org.rulii/rulii-spring
 [Apache 2.0 License]:https://opensource.org/licenses/Apache-2.0
 
 # _rulii-spring_
@@ -9,7 +9,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-orange.svg)][Apache 2.0 License]
 [![Maven Central Version](https://img.shields.io/maven-central/v/org.rulii/rulii-spring)][rulii-spring Maven Central]
-[![Javadoc](https://javadoc.io/badge2/org.rulii/rulii-spring/1.2.0/javadoc.svg)](https://javadoc.io/doc/org.rulii/rulii-spring/1.2.0)
+[![Javadoc](https://javadoc.io/badge2/org.rulii/rulii-spring/javadoc.svg)](https://javadoc.io/doc/org.rulii/rulii-spring/latest)
 ![Build](https://github.com/algox/rulii-spring/actions/workflows/maven.yml/badge.svg)
 [![codecov](https://codecov.io/gh/algox/rulii-spring/branch/develop/graph/badge.svg)](https://codecov.io/gh/algox/rulii-spring)
 
@@ -19,6 +19,7 @@
 
 - [What is it?](#what-is-it)
 - [Features](#features)
+- [What's New in 2.2.0](#whats-new-in-220)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
 - [Rule Discovery](#rule-discovery)
@@ -58,6 +59,29 @@ reading this guide.
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
 - XML-declared artifacts know their file and line, and the `${...}` text as written, for tools such as
   [rulii-explorer](https://github.com/algox/rulii-explorer)
+
+---
+
+## What's New in 2.2.0
+
+- **Bean Validation on the rule engine** — [rulii-bean-validation](https://github.com/algox/rulii-bean-validation)
+  comes with rulii-spring, and the auto-configuration makes it the application's `Validator`: pinned to the rulii
+  provider whatever the classpath order, and wired to the Spring `RuleRegistry` (`@Validate("orderRules")` names a
+  bean), the Spring rulii context, every `ConstraintMapper` and `ValueExtractor` bean, and `rulii.validation.failFast`.
+  Boot's method validation (`@Validated`) and `ValidationConfigurationCustomizer` beans work unchanged, and
+  `BeanValidator` is a bean too. See [Bean Validation](#bean-validation).
+- **Upgrading from 2.1** — an application that validated with Hibernate Validator validates with rulii after the
+  upgrade, with nothing else changed. `rulii.validation.enabled=false` keeps Hibernate Validator, deterministically,
+  while both providers are on the classpath.
+- **Default scripting language from configuration** — `rulii.script.defaultLanguage` in `application.properties`
+  (`el` for SpEL) sets the language of `@Expr` conditions and script rules that name none.
+- **Result type in XML** — rulii 2.2 keeps a formal result type in every rule set and flow definition. A script
+  cannot declare its return type, so `type` on `<r:result-extractor>` and `<r:returning>`, or `result-type` on
+  `<r:ruleset>` / `<r:ruleflow>`, states it; an unknown class fails the bean with the XML location. See
+  [RuleSets](#rulesets) and [RuleFlows](#ruleflows).
+- **Built against rulii 2.2.0** — see [What's New in rulii 2.2.0](https://github.com/algox/rulii#whats-new-in-220).
+
+Full details in the [changelog](change-log.md).
 
 ---
 
@@ -524,7 +548,7 @@ npm install -g @anthropic-ai/claude-code
 
 - [Spring integration docs](https://rulii.com/spring/introduction.html)
 - [rulii core documentation](https://rulii.com/introduction.html)
-- [Javadoc (1.2.0)](https://javadoc.io/doc/org.rulii/rulii-spring/1.2.0)
+- [Javadoc](https://javadoc.io/doc/org.rulii/rulii-spring/latest)
 - [Spring Boot sample project](https://github.com/algox/rulii-samples/tree/develop/spring-boot-sample)
 - [All sample projects](https://github.com/algox/rulii-samples)
 - [rulii core library](https://github.com/algox/rulii)
