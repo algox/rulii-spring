@@ -103,6 +103,24 @@ implementation 'org.rulii:rulii-spring:2.2.0'
 
 > rulii-spring transitively pulls in `org.rulii:rulii`. You do not need to declare it separately.
 
+**Using more than one rulii library?** Import the [rulii-bom](https://github.com/algox/rulii-bom) once and
+drop the versions. It pins a matching set of rulii, rulii-spring, rulii-bean-validation and rulii-explorer,
+and sits alongside the Spring Boot BOM without overlap:
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.rulii</groupId>
+            <artifactId>rulii-bom</artifactId>
+            <version>2.2.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
 ---
 
 ## Configuration
