@@ -53,7 +53,7 @@ reading this guide.
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
 - Spring Expression Language (SpEL) as a rule scripting language
-- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine, wired into the Spring rulii context; [rulii-explorer](https://github.com/algox/rulii-explorer) can show the validated beans and their constraints (`rulii.explorer.beans.enabled=true`)
+- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine in place of Hibernate Validator, wired into the Spring rulii context (`rulii.validation.enabled=false` keeps Hibernate Validator); [rulii-explorer](https://github.com/algox/rulii-explorer) can show the validated beans and their constraints (`rulii.explorer.beans.enabled=true`)
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
@@ -70,9 +70,10 @@ reading this guide.
   bean), the Spring rulii context, every `ConstraintMapper` and `ValueExtractor` bean, and `rulii.validation.failFast`.
   Boot's method validation (`@Validated`) and `ValidationConfigurationCustomizer` beans work unchanged, and
   `BeanValidator` is a bean too. See [Bean Validation](#bean-validation).
-- **Upgrading from 2.1** — an application that validated with Hibernate Validator validates with rulii after the
-  upgrade, with nothing else changed. `rulii.validation.enabled=false` keeps Hibernate Validator, deterministically,
-  while both providers are on the classpath.
+- **In place of Hibernate Validator** — an application that validated with Hibernate Validator validates with rulii
+  once rulii-spring 2.2.0 is on the classpath, whether it is added for the first time or upgraded from 2.1, with
+  nothing else changed. `rulii.validation.enabled=false` keeps Hibernate Validator, deterministically, while both
+  providers are on the classpath.
 - **Default scripting language from configuration** — `rulii.script.defaultLanguage` in `application.properties`
   (`el` for SpEL) sets the language of `@Expr` conditions and script rules that name none.
 - **Result type in XML** — rulii 2.2 keeps a formal result type in every rule set and flow definition. A script
@@ -102,6 +103,12 @@ implementation 'org.rulii:rulii-spring:2.2.0'
 ```
 
 > rulii-spring transitively pulls in `org.rulii:rulii`. You do not need to declare it separately.
+
+> **Bean Validation runs on rulii.** rulii-spring also brings
+> [rulii-bean-validation](https://github.com/algox/rulii-bean-validation). In an application that has
+> `spring-boot-starter-validation`, the `Validator` runs on rulii in place of Hibernate Validator, even when
+> Hibernate Validator is still on the classpath. Your constraints stay as they are, and each one runs as a rule.
+> To keep Hibernate Validator, set `rulii.validation.enabled=false`. See [Bean Validation](#bean-validation).
 
 **Using more than one rulii library?** Import the [rulii-bom](https://github.com/algox/rulii-bom) once and
 drop the versions. It pins a matching set of rulii, rulii-spring, rulii-bean-validation and rulii-explorer,
@@ -302,7 +309,14 @@ the auto-configuration defines the `Validator` bean that Spring Boot would other
 provider, so it is selected even when Hibernate Validator is still on the classpath. Boot's method validation
 (`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
 
-Keep Boot's validation starter, which brings the Boot wiring and `tomcat-embed-el`, the EL implementation messages
+So rulii takes the place of Hibernate Validator in any application that has `spring-boot-starter-validation`. To keep
+Hibernate Validator, set one property (more under "Staying on Hibernate Validator" below):
+
+```properties
+rulii.validation.enabled=false
+```
+
+Otherwise, keep Boot's validation starter, which brings the Boot wiring and `tomcat-embed-el`, the EL implementation messages
 use, but take Hibernate Validator out of it:
 
 ```xml
