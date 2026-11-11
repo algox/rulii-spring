@@ -221,7 +221,7 @@ References a rule bean already declared in the same (or imported) Spring context
 
 ## 7. Predefined validators as XML elements
 
-All 37 built-in validators are available directly as XML elements (the authoritative list is `PredefinedValidationRuleFactoryBean.TYPES`). Reference a binding by name (`binding`) or by SpEL expression (`expr`):
+37 of the 48 built-in validators are available directly as XML elements (the authoritative list is `PredefinedValidationRuleFactoryBean.TYPES`); the eleven added in rulii 2.2.0 have no XML element. Reference a binding by name (`binding`) or by SpEL expression (`expr`):
 
 ```xml
 <!-- By binding name -->

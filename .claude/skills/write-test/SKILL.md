@@ -145,7 +145,7 @@ RuleContext ctx = RuleContext.builder().build(bindings);
 Rule rule = ruleRegistry.getRule(MyRule.class);
 var result = rule.run(ctx);
 
-Assertions.assertEquals(RuleExecutionStatus.PASS, result.getStatus());
+Assertions.assertEquals(RuleExecutionStatus.PASS, result.status());
 Assertions.assertTrue(bindings.getValue("ruleViolations", RuleViolations.class).isEmpty());
 ```
 
@@ -177,7 +177,7 @@ RuleContext ctx = RuleContext.builder().build(bindings);
 Rule rule = ruleRegistry.getRule(MyRule.class);
 var result = rule.run(ctx);
 
-Assertions.assertEquals(RuleExecutionStatus.SKIP, result.getStatus());
+Assertions.assertEquals(RuleExecutionStatus.SKIPPED, result.status());
 Assertions.assertTrue(bindings.getValue("ruleViolations", RuleViolations.class).isEmpty());
 ```
 
@@ -250,7 +250,7 @@ public class MyXmlRuleTest {
     @Test
     public void testAdult() {
         var result = ageCheckRule.run(age -> 21);
-        Assertions.assertEquals(RuleExecutionStatus.PASS, result.getStatus());
+        Assertions.assertEquals(RuleExecutionStatus.PASS, result.status());
     }
 }
 ```

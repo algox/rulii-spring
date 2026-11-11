@@ -422,8 +422,9 @@ them. A file-level `<r:defaults>` applies to the whole file: an element's `categ
 
 ### Validation rules
 
-All **37 predefined validators** (`notNull`, `email`, `min`, `max`, `pattern`, …) are available directly
-as XML elements, and `<r:validationRule>` wraps custom checks:
+**37 of the 48 built-in validators** (`notNull`, `email`, `min`, `max`, `pattern`, …) are available directly
+as XML elements, and `<r:validationRule>` wraps custom checks. The eleven added in rulii 2.2.0 have no XML
+element and are built in Java with `Validators`:
 
 ```xml
 <r:notNull name="NameRequiredRule" binding="name"/>
