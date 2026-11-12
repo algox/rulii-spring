@@ -80,7 +80,7 @@ reading this guide.
   cannot declare its return type, so `type` on `<r:result-extractor>` and `<r:returning>`, or `result-type` on
   `<r:ruleset>` / `<r:ruleflow>`, states it; an unknown class fails the bean with the XML location. See
   [RuleSets](#rulesets) and [RuleFlows](#ruleflows).
-- **Built against rulii 2.2.0** — see [What's New in rulii 2.2.0](https://github.com/algox/rulii#whats-new-in-220).
+- **Built against rulii 2.2.0** — see [What's New in rulii 2.2.0](https://rulii.org/blog/rulii-2-2-0/).
 
 Full details in the [changelog](change-log.md).
 
