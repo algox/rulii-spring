@@ -40,7 +40,7 @@ _rulii-spring_ brings the [rulii](https://github.com/algox/rulii) rule engine in
 It provides auto-configuration, classpath scanning for rules, and seamless injection of Spring-managed beans
 directly into rule classes — so your rules can participate fully in the Spring application context.
 
-If you are new to rulii, start with the [rulii documentation](https://rulii.com/introduction.html) before
+If you are new to rulii, start with the [rulii documentation](https://rulii.org/getting-started/introduction/) before
 reading this guide.
 
 ---
@@ -308,6 +308,9 @@ application's Bean Validation provider, wired into the Spring rulii context. Not
 the auto-configuration defines the `Validator` bean that Spring Boot would otherwise define, pinned to the rulii
 provider, so it is selected even when Hibernate Validator is still on the classpath. Boot's method validation
 (`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
+
+rulii-bean-validation is not a certified implementation and does not run the TCK; the
+[specification coverage](https://rulii.org/bean-validation/spec-coverage/) page lists every known difference.
 
 So rulii takes the place of Hibernate Validator in any application that has `spring-boot-starter-validation`. To keep
 Hibernate Validator, set one property (more under "Staying on Hibernate Validator" below):
@@ -577,10 +580,10 @@ npm install -g @anthropic-ai/claude-code
 
 ## Documentation
 
-**[Full documentation at rulii.com](https://rulii.com)**
+**[Full documentation at rulii.org](https://rulii.org)**
 
-- [Spring integration docs](https://rulii.com/spring/introduction.html)
-- [rulii core documentation](https://rulii.com/introduction.html)
+- [Spring integration docs](https://rulii.org/spring/introduction/)
+- [rulii core documentation](https://rulii.org/getting-started/introduction/)
 - [Javadoc](https://javadoc.io/doc/org.rulii/rulii-spring/latest)
 - [Spring Boot sample project](https://github.com/algox/rulii-samples/tree/develop/spring-boot-sample)
 - [All sample projects](https://github.com/algox/rulii-samples)
