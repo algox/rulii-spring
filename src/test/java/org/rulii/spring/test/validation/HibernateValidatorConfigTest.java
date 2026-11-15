@@ -25,7 +25,7 @@ import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.rulii.spring.validation.BeanValidationConfig;
-import org.rulii.spring.validation.BeanValidationOptOutConfig;
+import org.rulii.spring.validation.HibernateValidatorConfig;
 import org.rulii.validation.beans.BeanValidator;
 import org.rulii.validation.beans.bootstrap.RuliiConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,15 +45,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@code rulii.validation.enabled=false} keeps Hibernate Validator: no rulii validator bean, and the
- * {@code Validator} bean is pinned to Hibernate Validator although rulii's provider comes first on the classpath.
+ * {@code rulii.validation.enabled=false} keeps Hibernate Validator although rulii's jar is on the classpath: no
+ * rulii validator bean, and the {@code Validator} bean is pinned to Hibernate Validator although rulii's provider
+ * comes first on the classpath.
  *
  * @author Max Arulananthan
  * @since 2.2
  */
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = BeanValidationOptOutConfigTest.Config.class, properties = "rulii.validation.enabled=false")
-class BeanValidationOptOutConfigTest {
+@SpringBootTest(classes = HibernateValidatorConfigTest.Config.class, properties = "rulii.validation.enabled=false")
+class HibernateValidatorConfigTest {
 
     @SpringBootConfiguration
     @EnableAutoConfiguration
@@ -70,7 +71,7 @@ class BeanValidationOptOutConfigTest {
     void nothingOfOursIsConfigured() {
         assertEquals(0, context.getBeanNamesForType(BeanValidator.class).length);
         assertFalse(context.containsBean(BeanValidationConfig.class.getName()));
-        assertTrue(context.containsBean(BeanValidationOptOutConfig.class.getName()));
+        assertTrue(context.containsBean(HibernateValidatorConfig.class.getName()));
     }
 
     @Test

@@ -51,8 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The auto-configured {@code Validator} is rulii's, wired into the Spring rulii context, with Hibernate Validator
- * on the test classpath and ignored.
+ * With {@code rulii-bean-validation} on the classpath the auto-configured {@code Validator} is rulii's, wired into
+ * the Spring rulii context, with Hibernate Validator on the test classpath and ignored.
  *
  * @author Max Arulananthan
  * @since 2.2

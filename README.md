@@ -19,6 +19,7 @@
 
 - [What is it?](#what-is-it)
 - [Features](#features)
+- [What's New in 2.3.0 (unreleased)](#whats-new-in-230-unreleased)
 - [What's New in 2.2.0](#whats-new-in-220)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
@@ -53,7 +54,7 @@ reading this guide.
 - Externalize rule messages via `application.yaml` / `application.properties`
 - Default parameter values using Spring's type conversion system
 - Spring Expression Language (SpEL) as a rule scripting language
-- Jakarta Bean Validation on rulii: [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) comes with rulii-spring, and the application's `Validator` runs on the rule engine in place of Hibernate Validator, wired into the Spring rulii context (`rulii.validation.enabled=false` keeps Hibernate Validator); [rulii-explorer](https://github.com/algox/rulii-explorer) can show the validated beans and their constraints (`rulii.explorer.beans.enabled=true`)
+- Jakarta Bean Validation on rulii, opt-in: add [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) and the application's `Validator` runs on the rule engine in place of Hibernate Validator, wired into the Spring rulii context (`rulii.validation.enabled=false` turns it off again; JPA keeps validating entities with Hibernate Validator); [rulii-explorer](https://github.com/algox/rulii-explorer) can show the validated beans and their constraints (`rulii.explorer.beans.enabled=true`)
 - Declare Rules, RuleSets, and RuleFlows in XML using the `rulii` Spring namespace
 - `${property:default}` placeholders in script text, resolved from the Spring `Environment`
 - `category` / `tags` on every XML artifact, with file-level `<r:defaults>` (rulii 2.1)
@@ -62,7 +63,23 @@ reading this guide.
 
 ---
 
+## What's New in 2.3.0 (unreleased)
+
+- **Bean Validation on rulii is opt-in (breaking)** — [rulii-bean-validation](https://github.com/algox/rulii-bean-validation)
+  is now an optional dependency of rulii-spring and no longer comes with it. Add `org.rulii:rulii-bean-validation`
+  to make rulii the application's `Validator`; adding it is the switch. `rulii.validation.enabled=false` turns it
+  off again while the dependency stays, and the `Validator` bean is then pinned to Hibernate Validator. Upgrading
+  from 2.2: add the dependency to keep validating with rulii. See [Bean Validation](#bean-validation).
+- **JPA is not affected** — while Hibernate Validator is on the classpath, JPA goes on validating entities with it,
+  whatever the dependency order. `@Validate` and `@Expr` on an entity are not checked at persist time; validate the
+  entity through the `Validator` bean before saving. An application that removes Hibernate Validator has JPA
+  validate with rulii.
+
+---
+
 ## What's New in 2.2.0
+
+In 2.2.0 rulii-bean-validation came with rulii-spring and was on by default; 2.3.0 makes it opt-in (above).
 
 - **Bean Validation on the rule engine** — [rulii-bean-validation](https://github.com/algox/rulii-bean-validation)
   comes with rulii-spring, and the auto-configuration makes it the application's `Validator`: pinned to the rulii
@@ -104,11 +121,11 @@ implementation 'org.rulii:rulii-spring:2.2.0'
 
 > rulii-spring transitively pulls in `org.rulii:rulii`. You do not need to declare it separately.
 
-> **Bean Validation runs on rulii.** rulii-spring also brings
-> [rulii-bean-validation](https://github.com/algox/rulii-bean-validation). In an application that has
-> `spring-boot-starter-validation`, the `Validator` runs on rulii in place of Hibernate Validator, even when
-> Hibernate Validator is still on the classpath. Your constraints stay as they are, and each one runs as a rule.
-> To keep Hibernate Validator, set `rulii.validation.enabled=false`. See [Bean Validation](#bean-validation).
+> **Bean Validation on rulii is opt-in.** Add
+> [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) and the application's `Validator` runs on
+> rulii in place of Hibernate Validator, even when Hibernate Validator is still on the classpath. Without the
+> dependency nothing changes. JPA keeps validating entities with Hibernate Validator. See
+> [Bean Validation](#bean-validation).
 
 **Using more than one rulii library?** Import the [rulii-bom](https://github.com/algox/rulii-bom) once and
 drop the versions. It pins a matching set of rulii, rulii-spring, rulii-bean-validation and rulii-explorer,
@@ -303,24 +320,34 @@ SpEL is the default choice in XML rule files, but any JSR-223 language registere
 
 ## Bean Validation
 
-rulii-spring comes with [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) and makes it the
-application's Bean Validation provider, wired into the Spring rulii context. Nothing to add and nothing to configure:
-the auto-configuration defines the `Validator` bean that Spring Boot would otherwise define, pinned to the rulii
-provider, so it is selected even when Hibernate Validator is still on the classpath. Boot's method validation
-(`@Validated`) runs through the same bean, and any `ValidationConfigurationCustomizer` beans still apply.
+Bean Validation on rulii is opt-in. Add [rulii-bean-validation](https://github.com/algox/rulii-bean-validation) and
+rulii-spring makes it the application's Bean Validation provider, wired into the Spring rulii context:
+
+```xml
+<dependency>
+    <groupId>org.rulii</groupId>
+    <artifactId>rulii-bean-validation</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+Adding the dependency is the switch; there is nothing else to configure. The auto-configuration defines the
+`Validator` bean that Spring Boot would otherwise define, pinned to the rulii provider, so it is selected even when
+Hibernate Validator is still on the classpath. Boot's method validation (`@Validated`) runs through the same bean,
+and any `ValidationConfigurationCustomizer` beans still apply. Without the dependency rulii-spring leaves Bean
+Validation alone.
 
 rulii-bean-validation is not a certified implementation and does not run the TCK; the
 [specification coverage](https://rulii.org/bean-validation/spec-coverage/) page lists every known difference.
 
-So rulii takes the place of Hibernate Validator in any application that has `spring-boot-starter-validation`. To keep
-Hibernate Validator, set one property (more under "Staying on Hibernate Validator" below):
+**JPA is not affected.** Spring Boot does not hand its `Validator` to JPA; Hibernate builds one of its own. While
+Hibernate Validator is on the classpath, JPA goes on validating entities with it, whatever the dependency order. So
+`@Validate` and `@Expr` on an entity are not checked at persist time: validate the entity through the `Validator`
+bean before saving it. An application that takes Hibernate Validator out has one provider left, and JPA validates
+with rulii.
 
-```properties
-rulii.validation.enabled=false
-```
-
-Otherwise, keep Boot's validation starter, which brings the Boot wiring and `tomcat-embed-el`, the EL implementation messages
-use, but take Hibernate Validator out of it:
+Taking Hibernate Validator out is optional. To do it, keep Boot's validation starter, which brings the Boot wiring
+and `tomcat-embed-el`, the EL implementation messages use, and exclude Hibernate Validator from it:
 
 ```xml
 <dependency>
@@ -335,10 +362,10 @@ use, but take Hibernate Validator out of it:
 </dependency>
 ```
 
-**Staying on Hibernate Validator.** `rulii.validation.enabled=false` opts out. With Hibernate Validator on the
-classpath rulii-spring then defines the `Validator` bean pinned to it, with Boot's message interpolation and
-customizers, so the application validates exactly as it did before; without it, Boot's own auto-configuration
-bootstraps the one provider there is.
+**Switching it off.** `rulii.validation.enabled=false` turns rulii validation off while the dependency stays. With
+Hibernate Validator on the classpath rulii-spring then defines the `Validator` bean pinned to it, with Boot's
+message interpolation and customizers, so the application validates exactly as it did before; without it, Boot's
+own auto-configuration bootstraps the one provider there is.
 
 What the wiring gives you:
 
@@ -370,7 +397,7 @@ public class OrderService {
 
 | Property | Default | What it does |
 |---|---|---|
-| `rulii.validation.enabled` | `true` | `false` keeps Bean Validation off the rule engine: the `Validator` bean is pinned to Hibernate Validator when present, otherwise left to Spring Boot |
+| `rulii.validation.enabled` | `true` when `rulii-bean-validation` is on the classpath | `false` switches rulii validation off while the dependency stays: the `Validator` bean is pinned to Hibernate Validator when present, otherwise left to Spring Boot |
 | `rulii.validation.failFast` | `false` | stop at the first violation |
 | `rulii.script.defaultLanguage` | none | the scripting language of `@Expr` and script rules that name none |
 

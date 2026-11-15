@@ -44,6 +44,10 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 /**
  * Makes rulii bean validation the application's Bean Validation provider, wired into the Spring rulii context.
  *
+ * <p>Opt-in: the application adds the {@code rulii-bean-validation} dependency (it is an optional dependency of
+ * this module and does not come with it). Adding it is the switch; without it this configuration does nothing.
+ * {@code rulii.validation.enabled=false} turns it off again while the dependency stays.</p>
+ *
  * <p>Runs before Spring Boot's validation auto-configuration and defines the {@code defaultValidator} bean Boot
  * would otherwise define: a {@link LocalValidatorFactoryBean} pinned to {@link RuliiValidationProvider}, so the
  * provider is selected whatever else is on the classpath (the Jakarta bootstrap otherwise takes the first provider
@@ -55,16 +59,18 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
  * validates through this bean, so {@code @Validated} services work unchanged.</p>
  *
  * <p>The unwrapped {@link BeanValidator} is a bean too, for code that wants {@code validateIn} or the materialized
- * flows without unwrapping. rulii-bean-validation comes with rulii-spring, so this is on in every Boot application
- * that has Boot's validation module; {@code rulii.validation.enabled=false} switches it off, and
- * {@link BeanValidationOptOutConfig} then keeps Hibernate Validator the provider when it is present.</p>
+ * flows without unwrapping. With the dependency added and the property {@code false},
+ * {@link HibernateValidatorConfig} keeps Hibernate Validator the provider when it is present. JPA is not part of
+ * this: while Hibernate Validator is on the classpath it goes on validating entities, see
+ * {@link JpaValidationConfig}.</p>
  *
  * @author Max Arulananthan
  * @since 2.2
  */
 @AutoConfiguration(beforeName = "org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration")
-@ConditionalOnClass(name = "org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer")
-@ConditionalOnProperty(name = "rulii.validation.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnClass(name = {"org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer",
+        BeanValidationConfig.BEAN_VALIDATOR})
+@ConditionalOnProperty(name = BeanValidationConfig.ENABLED_PROPERTY, havingValue = "true", matchIfMissing = true)
 public class BeanValidationConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BeanValidationConfig.class);
@@ -74,6 +80,17 @@ public class BeanValidationConfig {
      * handling and method validation find it as they would find Boot's own.
      */
     public static final String VALIDATOR_BEAN_NAME = "defaultValidator";
+
+    /**
+     * The property that turns rulii bean validation off ({@code false}) while its dependency is on the classpath;
+     * on when unset.
+     */
+    public static final String ENABLED_PROPERTY = "rulii.validation.enabled";
+
+    /**
+     * rulii's validator class, by name: rulii-bean-validation is an optional dependency of this module.
+     */
+    static final String BEAN_VALIDATOR = "org.rulii.validation.beans.BeanValidator";
 
     public BeanValidationConfig() {
         super();

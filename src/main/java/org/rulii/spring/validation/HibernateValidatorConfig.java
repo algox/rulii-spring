@@ -34,31 +34,38 @@ import org.springframework.util.ClassUtils;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 /**
- * Keeps Hibernate Validator the application's Bean Validation provider when rulii bean validation is opted out.
+ * Keeps Hibernate Validator the application's Bean Validation provider when rulii bean validation is switched off
+ * with its dependency still on the classpath.
  *
- * <p>rulii-bean-validation comes with rulii-spring, so an application that still has Hibernate Validator has two
- * providers on its classpath, and the Jakarta bootstrap would take whichever comes first. With
- * {@code rulii.validation.enabled=false} this configuration runs in place of {@link BeanValidationConfig} and, when
- * Hibernate Validator is present, defines the {@code defaultValidator} bean Boot would define, pinned to it: the same
+ * <p>An application that has added {@code rulii-bean-validation} and still has Hibernate Validator has two providers
+ * on its classpath, and the Jakarta bootstrap would take whichever comes first. With
+ * {@code rulii.validation.enabled=false} this configuration runs in place of {@link BeanValidationConfig} and defines
+ * the {@code defaultValidator} bean Boot would define, pinned to Hibernate Validator: the same
  * {@link LocalValidatorFactoryBean}, with Boot's message interpolator and the {@link ValidationConfigurationCustomizer}
- * beans applied, so opting out gives the application what it had before. Without Hibernate Validator the bean is
- * left to Boot, which bootstraps the one provider there is, rulii's, without the Spring rulii wiring.</p>
+ * beans applied, so switching off gives the application what it had before. Without Hibernate Validator the bean is
+ * left to Boot, which bootstraps the one provider there is, rulii's, without the Spring rulii wiring. Without
+ * {@code rulii-bean-validation} this configuration does nothing: there is one provider and Boot configures it.</p>
  *
  * @author Max Arulananthan
  * @since 2.2
  */
 @AutoConfiguration(beforeName = "org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration")
-@ConditionalOnClass(name = {BeanValidationOptOutConfig.HIBERNATE_VALIDATOR,
+@ConditionalOnClass(name = {HibernateValidatorConfig.HIBERNATE_VALIDATOR, HibernateValidatorConfig.RULII_PROVIDER,
         "org.springframework.boot.validation.autoconfigure.ValidationConfigurationCustomizer"})
-@ConditionalOnProperty(name = "rulii.validation.enabled", havingValue = "false")
-public class BeanValidationOptOutConfig {
+@ConditionalOnProperty(name = BeanValidationConfig.ENABLED_PROPERTY, havingValue = "false")
+public class HibernateValidatorConfig {
 
     /**
      * Hibernate Validator's provider class, by name: it is not a dependency of this module.
      */
     static final String HIBERNATE_VALIDATOR = "org.hibernate.validator.HibernateValidator";
 
-    public BeanValidationOptOutConfig() {
+    /**
+     * rulii's provider class, by name: rulii-bean-validation is an optional dependency of this module.
+     */
+    static final String RULII_PROVIDER = "org.rulii.validation.beans.bootstrap.RuliiValidationProvider";
+
+    public HibernateValidatorConfig() {
         super();
     }
 
@@ -86,6 +93,6 @@ public class BeanValidationOptOutConfig {
     @SuppressWarnings("unchecked")
     private static Class<? extends ValidationProvider<?>> hibernateValidator() {
         return (Class<? extends ValidationProvider<?>>) ClassUtils.resolveClassName(HIBERNATE_VALIDATOR,
-                BeanValidationOptOutConfig.class.getClassLoader());
+                HibernateValidatorConfig.class.getClassLoader());
     }
 }

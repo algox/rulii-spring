@@ -1,3 +1,5 @@
 org.rulii.spring.config.RuleConfig
 org.rulii.spring.validation.BeanValidationConfig
-org.rulii.spring.validation.BeanValidationOptOutConfig
+org.rulii.spring.validation.HibernateValidatorConfig
+org.rulii.spring.validation.JpaValidationConfig
+org.rulii.spring.validation.BeanValidationDependencyCheck

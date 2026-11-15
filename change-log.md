@@ -2,6 +2,12 @@
 
 ## [2.3.0] (unreleased)
 
+### Bean Validation
+
+- **Bean Validation on rulii is now opt-in (breaking).** `rulii-bean-validation` is an optional dependency of rulii-spring and no longer comes with it. Add `org.rulii:rulii-bean-validation` to make rulii the application's `Validator`; adding it is the switch. `rulii.validation.enabled=false` turns it off again while the dependency stays, and the `Validator` bean is then pinned to Hibernate Validator. Upgrading from 2.2: add the dependency to keep validating with rulii. Setting `rulii.validation.enabled=true` without the dependency does nothing and logs a warning at startup.
+- **JPA is not affected.** While Hibernate Validator is on the classpath, JPA goes on validating entities with it, whatever the dependency order: the new auto-configuration `org.rulii.spring.validation.JpaValidationConfig` hands JPA the factory Hibernate would build for itself with Hibernate Validator alone on the classpath (Spring Boot does not hand its `Validator` to JPA, so in 2.2 the provider JPA used depended on the order of the dependencies). `@Validate` and `@Expr` on an entity are not checked at persist time; validate the entity through the `Validator` bean before saving. An application that removes Hibernate Validator has JPA validate with rulii.
+- `org.rulii.spring.validation.BeanValidationOptOutConfig` is renamed `HibernateValidatorConfig`.
+
 ### Build
 
 - The jar manifest now carries the default implementation and specification entries (`Implementation-Title`, `Implementation-Version`, `Implementation-Vendor`), so the rulii-spring version can be read at runtime through `Package.getImplementationVersion()`, as rulii 2.3 does for its own jar.
