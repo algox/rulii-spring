@@ -466,9 +466,8 @@ them. A file-level `<r:defaults>` applies to the whole file: an element's `categ
 
 ### Validation rules
 
-**37 of the 48 built-in validators** (`notNull`, `email`, `min`, `max`, `pattern`, …) are available directly
-as XML elements, and `<r:validationRule>` wraps custom checks. The eleven added in rulii 2.2.0 have no XML
-element and are built in Java with `Validators`:
+**All 48 built-in validators** (`notNull`, `email`, `min`, `max`, `pattern`, `uuid`, `isbn`, …) are available
+directly as XML elements, and `<r:validationRule>` wraps custom checks:
 
 ```xml
 <r:notNull name="NameRequiredRule" binding="name"/>
@@ -477,6 +476,24 @@ element and are built in Java with `Validators`:
 
 <r:validationRule name="BalancedRule" errorCode="account.balanced" given="#ctx.debits == #ctx.credits"/>
 ```
+
+Every setting a validator's builder has in Java is an optional attribute of its element, under the builder
+method's name (since 2.3.0; up to 2.2.0 there were 37 elements and one such attribute). A setting left out
+keeps the Java default:
+
+```xml
+<r:isbn name="IsbnRule" binding="isbn" type="ANY"/>
+<r:uuid name="OrderIdRule" binding="orderId" versions="4" letterCase="INSENSITIVE"/>
+<r:durationMax name="SessionRule" binding="session" max="PT8H" inclusive="false"/>
+<r:url name="SiteRule" binding="site" protocol="https" host="${site.host}"/>
+<r:pattern name="NotesRule" binding="notes" pattern="a.b" flags="DOTALL,CASE_INSENSITIVE"/>
+<r:size name="TagsRule" binding="tags" min="1" max="3" failOnNull="false"/>
+```
+
+Switches such as `allowSpace` are booleans, enum settings take the Java constant names, `versions` and
+`variants` are comma-separated numbers, `flags` is a comma-separated list of `java.util.regex.Pattern` flag
+names, and durations are ISO-8601 (`PT30M`, `P2D`). `failOnNull` and `valueName` are available on every
+validator. Text and number settings accept `${...}` properties.
 
 ### RuleSets
 

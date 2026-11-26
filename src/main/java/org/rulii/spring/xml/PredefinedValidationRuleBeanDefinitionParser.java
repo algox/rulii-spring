@@ -18,12 +18,14 @@
 package org.rulii.spring.xml;
 
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Parses all predefined validation rule elements (e.g. {@code <rulii:notNull>},
@@ -41,6 +43,10 @@ import java.util.List;
  *   <li>{@code language} — overrides the default scripting language for expr/body</li>
  *   <li>{@code description}, {@code errorCode}, {@code severity}, {@code errorMessage} — optional overrides</li>
  * </ul>
+ *
+ * <p>Beyond those, an element carries the values its validator requires (e.g. {@code min}) and one
+ * optional attribute per setting of the validator's builder
+ * ({@link PredefinedValidationRuleFactoryBean#OPTIONS}).
  *
  * @author Max Arulananthan
  * @since 1.0
@@ -92,15 +98,34 @@ class PredefinedValidationRuleBeanDefinitionParser extends AbstractRuliiBeanDefi
         if (StringUtils.hasText(errorMessage)) builder.addPropertyValue("errorMessage", errorMessage);
 
         parseTypeSpecificAttributes(type, element, builder);
+        builder.addPropertyValue("options", parseOptions(type, element));
+    }
+
+    /**
+     * Collects the optional settings declared on the element. Only attributes that are present are
+     * copied, so a setting left out keeps the default of the validator's builder.
+     */
+    private static Map<String, String> parseOptions(String type, Element element) {
+        Map<String, String> result = new ManagedMap<>();
+
+        for (String option : PredefinedValidationRuleFactoryBean.COMMON_OPTIONS) {
+            if (element.hasAttribute(option)) result.put(option, element.getAttribute(option));
+        }
+
+        for (String option : PredefinedValidationRuleFactoryBean.OPTIONS.getOrDefault(type, List.of())) {
+            if (element.hasAttribute(option)) result.put(option, element.getAttribute(option));
+        }
+
+        return result;
     }
 
     private static void parseTypeSpecificAttributes(String type, Element element, BeanDefinitionBuilder builder) {
         switch (type) {
-            case "min", "decimalMin" ->
+            case "min", "decimalMin", "durationMin" ->
                 builder.addPropertyValue("min", element.getAttribute("min"));
-            case "max", "decimalMax" ->
+            case "max", "decimalMax", "durationMax" ->
                 builder.addPropertyValue("max", element.getAttribute("max"));
-            case "size" -> {
+            case "size", "codePointLength" -> {
                 builder.addPropertyValue("min", element.getAttribute("min"));
                 builder.addPropertyValue("max", element.getAttribute("max"));
             }

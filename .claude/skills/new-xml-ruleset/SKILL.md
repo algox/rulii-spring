@@ -221,7 +221,7 @@ References a rule bean already declared in the same (or imported) Spring context
 
 ## 7. Predefined validators as XML elements
 
-37 of the 48 built-in validators are available directly as XML elements (the authoritative list is `PredefinedValidationRuleFactoryBean.TYPES`); the eleven added in rulii 2.2.0 have no XML element. Reference a binding by name (`binding`) or by SpEL expression (`expr`):
+All 48 built-in validators are available directly as XML elements (the authoritative list is `PredefinedValidationRuleFactoryBean.TYPES`). Since rulii-spring 2.3.0; up to 2.2.0 the eleven validators added in rulii 2.2.0 (`uniqueElements`, `normalized`, `codePointLength`, `uuid`, `durationMin`, `durationMax`, `luhnCheck`, `mod10Check`, `mod11Check`, `ean`, `isbn`) had no element. Reference a binding by name (`binding`) or by SpEL expression (`expr`):
 
 ```xml
 <!-- By binding name -->
@@ -236,6 +236,44 @@ References a rule bean already declared in the same (or imported) Spring context
 <!-- By SpEL expression -->
 <r:min name="AgeMinByExpr" expr="#ctx.age" min="18"/>
 ```
+
+### Validator settings (since 2.3.0)
+
+Every setting a validator's builder has in Java is an optional attribute of its element, named after the
+builder method. A setting left out keeps the Java default.
+
+```xml
+<r:isbn        name="IsbnValid"   binding="isbn"    type="ANY"/>
+<r:uuid        name="IdIsUuid"    binding="id"      versions="4" letterCase="INSENSITIVE"/>
+<r:durationMax name="SessionMax"  binding="session" max="PT8H" inclusive="false"/>
+<r:alpha       name="NameAlpha"   binding="name"    allowSpace="true"/>
+<r:url         name="SiteValid"   binding="site"    protocol="https" host="${site.host}"/>
+<r:pattern     name="NotesFormat" binding="notes"   pattern="a.b" flags="DOTALL,CASE_INSENSITIVE"/>
+<r:size        name="TagsSize"    binding="tags"    min="1" max="3" failOnNull="false"/>
+```
+
+| Element | Settings |
+|---|---|
+| every element | `failOnNull` (false skips the rule for a null value; `notNull`, `notBlank`, `notEmpty` accept true only), `valueName` |
+| `alpha`, `alphaNumeric`, `decimal`, `numeric` | `allowSpace` |
+| `decimalMin`, `decimalMax`, `durationMin`, `durationMax` | `inclusive` |
+| `email` | `allowLocal`, `allowTopLevelDomain`, `anyDomain`, `pattern`, `flags` |
+| `url` | `protocol`, `host`, `port`, `regexp`, `flags` |
+| `pattern` | `caseSensitive`, `flags` |
+| `normalized` | `form` (`NFC`, `NFD`, `NFKC`, `NFKD`) |
+| `codePointLength` (`min`, `max` required) | `normalization` |
+| `uuid` | `allowEmpty`, `allowNil`, `versions`, `variants`, `letterCase` (`LOWER_CASE`, `UPPER_CASE`, `INSENSITIVE`) |
+| `luhnCheck` | `startIndex`, `endIndex`, `checkDigitIndex`, `ignoreNonDigitCharacters` |
+| `mod10Check` | the four of `luhnCheck`, `multiplier`, `weight` |
+| `mod11Check` | the four of `luhnCheck`, `threshold`, `treatCheck10As`, `treatCheck11As`, `processingDirection` (`RIGHT_TO_LEFT`, `LEFT_TO_RIGHT`) |
+| `ean` | `type` (`EAN13`, `EAN8`) |
+| `isbn` | `type` (`ISBN_10`, `ISBN_13`, `ANY`) |
+
+- Switches (`allowSpace`, `allowLocal`, `anyDomain`, ...) are booleans: `true` turns the setting on.
+- `versions` / `variants` are comma-separated numbers; `flags` is comma-separated `java.util.regex.Pattern` flag names.
+- `durationMin` / `durationMax` take an ISO-8601 duration in `min` / `max`: `PT30M`, `PT8H`, `P2D`.
+- Text and number settings accept `${...}` properties; booleans and enum settings do not.
+- Extra violation parameters (`param(name, value)` in Java) have no XML form: build such a rule in Java and use `<r:bean-ref>`.
 
 ### Overriding error metadata
 

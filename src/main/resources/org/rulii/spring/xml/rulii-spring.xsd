@@ -284,6 +284,49 @@
         </union>
     </simpleType>
 
+    <!--
+        A comma-separated list of whole numbers (versions="4,7"), or a property placeholder.
+    -->
+    <simpleType name="intListOrPlaceholder">
+        <union>
+            <simpleType>
+                <restriction base="string">
+                    <pattern value="\s*\d+(\s*,\s*\d+)*\s*"/>
+                </restriction>
+            </simpleType>
+            <simpleType>
+                <restriction base="string">
+                    <pattern value="\$\{[^}]+\}"/>
+                </restriction>
+            </simpleType>
+        </union>
+    </simpleType>
+
+    <!--
+        A comma-separated list of java.util.regex.Pattern flag names (flags="MULTILINE,DOTALL").
+    -->
+    <simpleType name="regexFlagsType">
+        <restriction base="string">
+            <pattern value="\s*(UNIX_LINES|CASE_INSENSITIVE|COMMENTS|MULTILINE|LITERAL|DOTALL|UNICODE_CASE|CANON_EQ|UNICODE_CHARACTER_CLASS)(\s*,\s*(UNIX_LINES|CASE_INSENSITIVE|COMMENTS|MULTILINE|LITERAL|DOTALL|UNICODE_CASE|CANON_EQ|UNICODE_CHARACTER_CLASS))*\s*"/>
+        </restriction>
+    </simpleType>
+
+    <!-- The Unicode normalization forms of java.text.Normalizer.Form. -->
+    <simpleType name="normalizerFormType">
+        <restriction base="string">
+            <enumeration value="NFC"/>
+            <enumeration value="NFD"/>
+            <enumeration value="NFKC"/>
+            <enumeration value="NFKD"/>
+        </restriction>
+    </simpleType>
+
+    <simpleType name="singleCharacterType">
+        <restriction base="string">
+            <length value="1"/>
+        </restriction>
+    </simpleType>
+
     <simpleType name="severityType">
         <restriction base="string">
             <enumeration value="FATAL"/>
@@ -328,6 +371,14 @@
 
         All override attributes are optional — each rule supplies its own defaults:
           errorCode, severity, errorMessage, description
+
+        Two settings every validator has, both optional and without a schema default (a setting
+        left out keeps the validator's own default):
+          failOnNull — true (the default): a null value reaches the rule and typically fails it;
+                       false: the rule is skipped for a null value. notNull, notBlank and
+                       notEmpty accept true only.
+          valueName  — the name the validated value is reported under in a violation's
+                       parameters; the binding name, or "value", when left out
     -->
     <complexType name="predefinedValidationRuleType" abstract="true" mixed="true">
         <attribute name="name" type="string" use="required"/>
@@ -340,6 +391,8 @@
         <attribute name="errorCode" type="string"/>
         <attribute name="severity" type="rulii:severityType"/>
         <attribute name="errorMessage" type="string"/>
+        <attribute name="failOnNull" type="boolean"/>
+        <attribute name="valueName" type="string"/>
     </complexType>
 
 
@@ -388,7 +441,9 @@
     <element name="alpha">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowSpace" type="boolean"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -396,7 +451,9 @@
     <element name="alphaNumeric">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowSpace" type="boolean"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -412,7 +469,9 @@
     <element name="decimal">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowSpace" type="boolean"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -420,7 +479,9 @@
     <element name="numeric">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowSpace" type="boolean"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -428,7 +489,14 @@
     <element name="email">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowLocal" type="boolean"/>
+                    <attribute name="allowTopLevelDomain" type="boolean"/>
+                    <attribute name="anyDomain" type="boolean"/>
+                    <!-- A regular expression the address must match as well, compiled with flags. -->
+                    <attribute name="pattern" type="string"/>
+                    <attribute name="flags" type="rulii:regexFlagsType"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -436,7 +504,14 @@
     <element name="url">
         <complexType>
             <complexContent>
-                <extension base="rulii:predefinedValidationRuleType"/>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="protocol" type="string"/>
+                    <attribute name="host" type="string"/>
+                    <attribute name="port" type="rulii:intOrPlaceholder"/>
+                    <!-- A regular expression the whole URL must match as well, compiled with flags. -->
+                    <attribute name="regexp" type="string"/>
+                    <attribute name="flags" type="rulii:regexFlagsType"/>
+                </extension>
             </complexContent>
         </complexType>
     </element>
@@ -573,6 +648,7 @@
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
                     <attribute name="min" type="string" use="required"/>
+                    <attribute name="inclusive" type="boolean"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -583,6 +659,7 @@
             <complexContent>
                 <extension base="rulii:predefinedValidationRuleType">
                     <attribute name="max" type="string" use="required"/>
+                    <attribute name="inclusive" type="boolean"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -622,6 +699,8 @@
                 <extension base="rulii:predefinedValidationRuleType">
                     <attribute name="pattern" type="string" use="required"/>
                     <attribute name="caseSensitive" type="boolean" default="true"/>
+                    <!-- Combines with caseSensitive: caseSensitive="false" adds CASE_INSENSITIVE. -->
+                    <attribute name="flags" type="rulii:regexFlagsType"/>
                 </extension>
             </complexContent>
         </complexType>
@@ -689,6 +768,181 @@
                     <sequence>
                         <element name="item" type="string" minOccurs="1" maxOccurs="unbounded"/>
                     </sequence>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+
+    <!-- ==================== Predefined Validation Rules — Added in rulii 2.2 ==================== -->
+
+    <!--
+        Every optional attribute below is a setting of the validator's builder, under the builder
+        method's name. None declares a default: a setting left out keeps the builder's default.
+    -->
+
+    <element name="uniqueElements">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType"/>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="normalized">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <!-- The form the value must be in; NFC when left out. -->
+                    <attribute name="form" type="rulii:normalizerFormType"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="codePointLength">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="min" type="rulii:intOrPlaceholder" use="required"/>
+                    <attribute name="max" type="rulii:intOrPlaceholder" use="required"/>
+                    <!-- Normalizes the value to this form before counting; counted as is when left out. -->
+                    <attribute name="normalization" type="rulii:normalizerFormType"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="uuid">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="allowEmpty" type="boolean"/>
+                    <attribute name="allowNil" type="boolean"/>
+                    <attribute name="versions" type="rulii:intListOrPlaceholder"/>
+                    <attribute name="variants" type="rulii:intListOrPlaceholder"/>
+                    <attribute name="letterCase">
+                        <simpleType>
+                            <restriction base="string">
+                                <enumeration value="LOWER_CASE"/>
+                                <enumeration value="UPPER_CASE"/>
+                                <enumeration value="INSENSITIVE"/>
+                            </restriction>
+                        </simpleType>
+                    </attribute>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <!--
+        durationMin / durationMax take an ISO-8601 duration, as java.time.Duration.parse reads it:
+        PT30M (30 minutes), PT8H (8 hours), P2D (2 days).
+    -->
+    <element name="durationMin">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="min" type="string" use="required"/>
+                    <attribute name="inclusive" type="boolean"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="durationMax">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="max" type="string" use="required"/>
+                    <attribute name="inclusive" type="boolean"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="luhnCheck">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="startIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="endIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="checkDigitIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="ignoreNonDigitCharacters" type="boolean"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="mod10Check">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="multiplier" type="rulii:intOrPlaceholder"/>
+                    <attribute name="weight" type="rulii:intOrPlaceholder"/>
+                    <attribute name="startIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="endIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="checkDigitIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="ignoreNonDigitCharacters" type="boolean"/>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="mod11Check">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="threshold" type="rulii:intOrPlaceholder"/>
+                    <attribute name="startIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="endIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="checkDigitIndex" type="rulii:intOrPlaceholder"/>
+                    <attribute name="ignoreNonDigitCharacters" type="boolean"/>
+                    <attribute name="treatCheck10As" type="rulii:singleCharacterType"/>
+                    <attribute name="treatCheck11As" type="rulii:singleCharacterType"/>
+                    <attribute name="processingDirection">
+                        <simpleType>
+                            <restriction base="string">
+                                <enumeration value="RIGHT_TO_LEFT"/>
+                                <enumeration value="LEFT_TO_RIGHT"/>
+                            </restriction>
+                        </simpleType>
+                    </attribute>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="ean">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="type">
+                        <simpleType>
+                            <restriction base="string">
+                                <enumeration value="EAN13"/>
+                                <enumeration value="EAN8"/>
+                            </restriction>
+                        </simpleType>
+                    </attribute>
+                </extension>
+            </complexContent>
+        </complexType>
+    </element>
+
+    <element name="isbn">
+        <complexType>
+            <complexContent>
+                <extension base="rulii:predefinedValidationRuleType">
+                    <attribute name="type">
+                        <simpleType>
+                            <restriction base="string">
+                                <enumeration value="ISBN_10"/>
+                                <enumeration value="ISBN_13"/>
+                                <enumeration value="ANY"/>
+                            </restriction>
+                        </simpleType>
+                    </attribute>
                 </extension>
             </complexContent>
         </complexType>
@@ -794,6 +1048,17 @@
                             <element ref="rulii:startsWith"/>
                             <element ref="rulii:endsWith"/>
                             <element ref="rulii:in"/>
+                            <element ref="rulii:uniqueElements"/>
+                            <element ref="rulii:normalized"/>
+                            <element ref="rulii:codePointLength"/>
+                            <element ref="rulii:uuid"/>
+                            <element ref="rulii:durationMin"/>
+                            <element ref="rulii:durationMax"/>
+                            <element ref="rulii:luhnCheck"/>
+                            <element ref="rulii:mod10Check"/>
+                            <element ref="rulii:mod11Check"/>
+                            <element ref="rulii:ean"/>
+                            <element ref="rulii:isbn"/>
                             <element name="bean-ref"  type="rulii:beanReferenceType"/>
                             <element name="class-ref" type="rulii:classReferenceType"/>
                         </choice>
